@@ -1,4 +1,5 @@
 import type { MemoryMoment } from '../types'
+import { getSupabaseClient } from './supabase'
 
 const DB_NAME = 'MomentosImportantesDB'
 const STORE_NAME = 'memories'
@@ -44,6 +45,8 @@ export const INITIAL_MEMORIES: MemoryMoment[] = [
     ],
     feeling: 'magico',
     isMilestone: true,
+    songTitle: 'Perfect',
+    songArtist: 'Ed Sheeran',
     createdAt: Date.now() - 1000 * 60 * 60 * 24 * 300,
     updatedAt: Date.now() - 1000 * 60 * 60 * 24 * 300
   },
@@ -64,6 +67,8 @@ export const INITIAL_MEMORIES: MemoryMoment[] = [
     ],
     feeling: 'amor',
     isMilestone: true,
+    songTitle: 'Yellow',
+    songArtist: 'Coldplay',
     createdAt: Date.now() - 1000 * 60 * 60 * 24 * 60,
     updatedAt: Date.now() - 1000 * 60 * 60 * 24 * 60
   },
@@ -90,6 +95,44 @@ export const INITIAL_MEMORIES: MemoryMoment[] = [
 ]
 
 export async function getAllMemories(userId?: string): Promise<MemoryMoment[]> {
+  // 1. Try Supabase cloud first if connected
+  const supabase = getSupabaseClient()
+  if (supabase) {
+    try {
+      let query = supabase.from('memories').select('*')
+      if (userId) {
+        query = query.or(`user_id.eq.${userId},user_id.is.null`)
+      }
+      const { data, error } = await query.order('date', { ascending: false })
+
+      if (!error && data && data.length > 0) {
+        const cloudMemories: MemoryMoment[] = data.map(item => ({
+          id: item.id,
+          userId: item.user_id,
+          title: item.title,
+          date: item.date,
+          category: item.category,
+          emoji: item.emoji,
+          description: item.description,
+          location: item.location,
+          feeling: item.feeling,
+          isMilestone: item.is_milestone,
+          songTitle: item.song_title,
+          songArtist: item.song_artist,
+          songUrl: item.song_url,
+          photos: item.photos || [],
+          audioData: item.audio_data,
+          createdAt: item.created_at,
+          updatedAt: item.updated_at
+        }))
+        return cloudMemories
+      }
+    } catch (err) {
+      console.warn('Supabase fetch error, fallback to IndexedDB', err)
+    }
+  }
+
+  // 2. Local IndexedDB fallback
   try {
     const db = await openDB()
     return new Promise((resolve) => {
@@ -107,7 +150,6 @@ export async function getAllMemories(userId?: string): Promise<MemoryMoment[]> {
           }
           resolve([])
         } else {
-          // If userId provided, filter by userId or include unassigned legacy ones
           if (userId) {
             results = results.filter(m => !m.userId || m.userId === userId)
           }
@@ -162,6 +204,35 @@ export async function saveMemory(moment: MemoryMoment, userId?: string): Promise
     userId: moment.userId || userId
   }
 
+  // 1. Supabase Cloud Sync
+  const supabase = getSupabaseClient()
+  if (supabase) {
+    try {
+      await supabase.from('memories').upsert({
+        id: itemToSave.id,
+        user_id: itemToSave.userId || null,
+        title: itemToSave.title,
+        date: itemToSave.date,
+        category: itemToSave.category,
+        emoji: itemToSave.emoji,
+        description: itemToSave.description,
+        location: itemToSave.location || null,
+        feeling: itemToSave.feeling || null,
+        is_milestone: !!itemToSave.isMilestone,
+        song_title: itemToSave.songTitle || null,
+        song_artist: itemToSave.songArtist || null,
+        song_url: itemToSave.songUrl || null,
+        photos: itemToSave.photos || [],
+        audio_data: itemToSave.audioData || null,
+        created_at: itemToSave.createdAt,
+        updated_at: itemToSave.updatedAt
+      })
+    } catch (err) {
+      console.warn('Supabase upsert error', err)
+    }
+  }
+
+  // 2. Local IndexedDB Cache
   try {
     const db = await openDB()
     return new Promise((resolve, reject) => {
@@ -176,7 +247,7 @@ export async function saveMemory(moment: MemoryMoment, userId?: string): Promise
       request.onerror = () => reject(request.error)
     })
   } catch {
-    const list = await getAllMemories()
+    const list = await getAllMemories(userId)
     const index = list.findIndex(m => m.id === itemToSave.id)
     if (index >= 0) {
       list[index] = itemToSave
@@ -188,6 +259,15 @@ export async function saveMemory(moment: MemoryMoment, userId?: string): Promise
 }
 
 export async function deleteMemory(id: string): Promise<void> {
+  const supabase = getSupabaseClient()
+  if (supabase) {
+    try {
+      await supabase.from('memories').delete().eq('id', id)
+    } catch (err) {
+      console.warn('Supabase delete error', err)
+    }
+  }
+
   try {
     const db = await openDB()
     return new Promise((resolve, reject) => {

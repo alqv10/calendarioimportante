@@ -8,10 +8,12 @@ import { MemoryDetailModal } from './components/MemoryDetailModal'
 import { DayMomentsModal } from './components/DayMomentsModal'
 import { AuthModal } from './components/AuthModal'
 import { GraceEasterEggModal } from './components/GraceEasterEggModal'
+import { CloudConfigModal } from './components/CloudConfigModal'
 import { BottomNav } from './components/BottomNav'
 import type { MemoryMoment, ViewMode, UserProfile } from './types'
 import { getAllMemories, saveMemory, deleteMemory } from './services/storage'
 import { getCurrentUser, logoutUser } from './services/auth'
+import { isCloudDatabaseConnected } from './services/supabase'
 import { Heart, Sparkles, Flower2 } from 'lucide-react'
 
 export function App() {
@@ -35,6 +37,8 @@ export function App() {
   const [dayModalDate, setDayModalDate] = useState<string | null>(null)
   const [isAuthOpen, setIsAuthOpen] = useState(false)
   const [isGraceEasterEggOpen, setIsGraceEasterEggOpen] = useState(false)
+  const [isCloudConfigOpen, setIsCloudConfigOpen] = useState(false)
+  const [isCloudConnected, setIsCloudConnected] = useState(() => isCloudDatabaseConnected())
 
   // Sync dark mode class on document
   useEffect(() => {
@@ -146,6 +150,8 @@ export function App() {
         isDarkMode={isDarkMode}
         onToggleDarkMode={toggleDarkMode}
         onOpenGraceEasterEgg={() => setIsGraceEasterEggOpen(true)}
+        onOpenCloudConfig={() => setIsCloudConfigOpen(true)}
+        isCloudConnected={isCloudConnected}
       />
 
       {/* Main Content Area */}
@@ -251,6 +257,15 @@ export function App() {
       <GraceEasterEggModal
         isOpen={isGraceEasterEggOpen}
         onClose={() => setIsGraceEasterEggOpen(false)}
+      />
+
+      <CloudConfigModal
+        isOpen={isCloudConfigOpen}
+        onClose={() => setIsCloudConfigOpen(false)}
+        onConfigChanged={() => {
+          setIsCloudConnected(isCloudDatabaseConnected())
+          fetchMemories()
+        }}
       />
 
     </div>

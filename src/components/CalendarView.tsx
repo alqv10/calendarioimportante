@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Plus, MapPin, Sparkles } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Plus, MapPin, Sparkles, Image as ImageIcon } from 'lucide-react'
 import { CATEGORIES } from '../types'
 import type { MemoryMoment } from '../types'
 import { generateCalendarMonth, MONTH_NAMES_ES, DAY_NAMES_ES, formatDateSpanish } from '../utils/dateUtils'
@@ -64,7 +64,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
   return (
     <div className="space-y-6">
       {/* Month Navigation & Bar */}
-      <div className="bg-white/95 dark:bg-[#181620]/95 backdrop-blur rounded-2xl p-5 sm:p-6 border border-stone-200 dark:border-stone-800 shadow-sm transition-colors">
+      <div className="bg-white/95 dark:bg-[#181620]/95 backdrop-blur rounded-2xl p-4 sm:p-6 border border-stone-200 dark:border-stone-800 shadow-sm transition-colors">
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
           
           <div className="flex items-center gap-3">
@@ -112,7 +112,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
         </div>
 
         {/* Days of Week Header */}
-        <div className="grid grid-cols-7 gap-1.5 sm:gap-2 mt-6 text-center">
+        <div className="grid grid-cols-7 gap-1.5 sm:gap-2 mt-5 text-center">
           {DAY_NAMES_ES.map((dayName, idx) => {
             const isWeekend = idx === 0 || idx === 6
             return (
@@ -128,7 +128,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
           })}
         </div>
 
-        {/* Calendar Grid (Crisp geometric corners) */}
+        {/* Calendar Grid with Glassmorphism Photo Effect */}
         <div className="grid grid-cols-7 gap-1.5 sm:gap-2 mt-2">
           {calendarDays.map((day, idx) => {
             const dayMoments = momentsByDate.get(day.dateString) || []
@@ -136,6 +136,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
             const hasMilestone = dayMoments.some(m => m.isMilestone || m.category === 'aniversario')
             const primaryMoment = dayMoments[0]
             const firstPhoto = primaryMoment?.photos?.[0]
+            const totalDayPhotos = dayMoments.reduce((acc, m) => acc + (m.photos?.length || 0), 0)
 
             return (
               <div
@@ -147,24 +148,44 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                     onAddMomentForDate(day.dateString)
                   }
                 }}
-                className={`group relative min-h-[85px] sm:min-h-[105px] md:min-h-[115px] rounded-xl p-1.5 sm:p-2 border transition-all cursor-pointer flex flex-col justify-between select-none ${
+                className={`group relative min-h-[90px] sm:min-h-[110px] md:min-h-[125px] rounded-xl p-1.5 sm:p-2 border transition-all duration-300 cursor-pointer flex flex-col justify-between select-none overflow-hidden ${
                   !day.isCurrentMonth
-                    ? 'bg-stone-50/40 dark:bg-stone-900/20 border-dashed border-stone-200/50 dark:border-stone-800/40 text-stone-300 dark:text-stone-700 opacity-50'
+                    ? 'bg-stone-50/40 dark:bg-stone-900/20 border-dashed border-stone-200/50 dark:border-stone-800/40 text-stone-300 dark:text-stone-700 opacity-40'
                     : day.isToday
-                    ? 'bg-rose-50/70 dark:bg-rose-950/40 border-rose-400 dark:border-rose-600 ring-1 ring-rose-300 dark:ring-rose-800 shadow-xs'
+                    ? 'ring-2 ring-rose-400 dark:ring-rose-500 shadow-sm border-rose-400'
                     : hasMilestone
-                    ? 'bg-amber-50/40 dark:bg-amber-950/30 border-amber-300 dark:border-amber-800 shadow-xs hover:border-amber-400'
+                    ? 'border-amber-400 dark:border-amber-600 shadow-sm hover:border-amber-500'
                     : hasMoments
-                    ? 'bg-white dark:bg-[#1e1c26] border-rose-200 dark:border-rose-900/60 shadow-xs hover:border-rose-400'
-                    : 'bg-white/60 dark:bg-[#191722]/60 border-stone-200/70 dark:border-stone-800/80 hover:bg-stone-50/80 dark:hover:bg-stone-800/50 hover:border-stone-300 dark:hover:border-stone-700'
+                    ? 'border-rose-300/80 dark:border-rose-900/70 shadow-sm hover:border-rose-500'
+                    : 'bg-white/70 dark:bg-[#191722]/60 border-stone-200/70 dark:border-stone-800/80 hover:bg-stone-50/80 dark:hover:bg-stone-800/50 hover:border-stone-300 dark:hover:border-stone-700'
                 }`}
               >
+                {/* 🌟 Glassmorphism Background with Photo Backdrop */}
+                {firstPhoto && (
+                  <>
+                    {/* Background Photo with zoom on hover */}
+                    <img
+                      src={firstPhoto.url}
+                      alt={primaryMoment.title}
+                      className="absolute inset-0 w-full h-full object-cover transform scale-105 group-hover:scale-115 transition-transform duration-500 ease-out"
+                    />
+
+                    {/* Frosted Glass Overlay */}
+                    <div className="absolute inset-0 bg-white/55 dark:bg-black/65 backdrop-blur-[6px] group-hover:backdrop-blur-[2px] group-hover:bg-white/25 dark:group-hover:bg-black/40 transition-all duration-300" />
+
+                    {/* Glass Specular Sheen Gradient */}
+                    <div className="absolute inset-0 bg-gradient-to-tr from-white/10 via-transparent to-white/30 dark:from-white/5 dark:to-white/10 pointer-events-none" />
+                  </>
+                )}
+
                 {/* Top of day cell */}
-                <div className="flex items-center justify-between">
+                <div className="relative z-10 flex items-center justify-between">
                   <span
                     className={`inline-flex items-center justify-center text-xs font-bold w-5 h-5 rounded-md transition-colors ${
                       day.isToday
                         ? 'bg-rose-500 text-white shadow-xs'
+                        : firstPhoto
+                        ? 'bg-black/50 text-white backdrop-blur-md border border-white/20 font-black'
                         : hasMilestone
                         ? 'text-amber-800 dark:text-amber-300 bg-amber-100 dark:bg-amber-950/80 font-extrabold'
                         : hasMoments
@@ -178,37 +199,38 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                   </span>
 
                   {/* Indicators */}
-                  {hasMilestone && (
-                    <span title="¡Hito o Aniversario especial!" className="text-amber-500 text-xs animate-bounce">
-                      ✨
-                    </span>
-                  )}
-                  {hasMoments && !hasMilestone && (
-                    <span className="text-rose-500 text-[11px]">
-                      💖
-                    </span>
-                  )}
+                  <div className="flex items-center gap-1">
+                    {hasMilestone && (
+                      <span title="Hito especial" className="text-amber-400 drop-shadow-sm text-xs animate-bounce">
+                        ✨
+                      </span>
+                    )}
+                    {totalDayPhotos > 0 && !hasMilestone && (
+                      <span className="text-[10px] text-rose-500 drop-shadow-xs flex items-center gap-0.5">
+                        <ImageIcon className="w-3 h-3" />
+                      </span>
+                    )}
+                  </div>
                 </div>
 
-                {/* Day content: Preview photo or emoji & moment titles */}
-                <div className="mt-1 flex-1 flex flex-col justify-end">
+                {/* Day content: Glassmorphic memory pill */}
+                <div className="relative z-10 mt-1 flex-1 flex flex-col justify-end">
                   {hasMoments ? (
                     <div className="space-y-1">
                       {firstPhoto ? (
-                        <div className="relative w-full h-8 sm:h-11 rounded-lg overflow-hidden shadow-xs border border-white dark:border-stone-700">
-                          <img
-                            src={firstPhoto.url}
-                            alt={primaryMoment.title}
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                          />
-                          {dayMoments.length > 1 && (
-                            <div className="absolute bottom-0.5 right-0.5 bg-black/70 text-[9px] font-bold text-white px-1 rounded-sm backdrop-blur-xs">
-                              +{dayMoments.length}
-                            </div>
+                        <div className="p-1 rounded-lg bg-black/55 text-white backdrop-blur-md border border-white/20 shadow-xs group-hover:bg-black/70 transition-colors">
+                          <div className="flex items-center gap-1 text-[10px] font-bold truncate">
+                            <span>{primaryMoment.emoji}</span>
+                            <span className="truncate drop-shadow-xs">{primaryMoment.title}</span>
+                          </div>
+                          {totalDayPhotos > 1 && (
+                            <span className="text-[9px] text-rose-200 font-semibold block mt-0.5">
+                              📸 {totalDayPhotos} fotos
+                            </span>
                           )}
                         </div>
                       ) : (
-                        <div className="p-1 rounded-lg bg-stone-50/90 dark:bg-stone-800/80 border border-stone-200/60 dark:border-stone-700 group-hover:bg-rose-50 dark:group-hover:bg-rose-950/40 transition-colors">
+                        <div className="p-1 rounded-lg bg-stone-100/90 dark:bg-stone-800/90 backdrop-blur-xs border border-stone-200/80 dark:border-stone-700 group-hover:border-rose-400 transition-colors">
                           <div className="flex items-center gap-1 text-[11px] font-semibold text-stone-800 dark:text-stone-200 truncate">
                             <span>{primaryMoment.emoji}</span>
                             <span className="truncate hidden sm:inline">{primaryMoment.title}</span>
@@ -233,14 +255,14 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
 
       {/* Highlights of Current Month */}
       {monthMemories.length > 0 && (
-        <div className="bg-white/90 dark:bg-[#181620]/90 rounded-2xl p-6 border border-stone-200 dark:border-stone-800 shadow-sm transition-colors">
+        <div className="bg-white/90 dark:bg-[#181620]/90 rounded-2xl p-5 sm:p-6 border border-stone-200 dark:border-stone-800 shadow-sm transition-colors">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-bold text-stone-900 dark:text-white flex items-center gap-2">
               <Sparkles className="w-5 h-5 text-amber-500" />
               Recuerdos de este mes ({MONTH_NAMES_ES[currentMonth]})
             </h3>
             <span className="text-xs text-stone-500 dark:text-stone-400 font-medium">
-              Toca cualquier tarjeta para ver detalles
+              Toca para ver o escuchar
             </span>
           </div>
 
@@ -253,49 +275,63 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                 <div
                   key={moment.id}
                   onClick={() => onSelectMoment(moment)}
-                  className="group bg-gradient-to-b from-stone-50/50 to-white dark:from-stone-900/40 dark:to-[#1a1822] rounded-xl p-4 border border-stone-200 dark:border-stone-800 hover:border-rose-400 dark:hover:border-rose-600 hover:shadow-md transition-all cursor-pointer flex flex-col justify-between"
+                  className="group relative overflow-hidden rounded-xl p-4 border border-stone-200 dark:border-stone-800 hover:border-rose-400 dark:hover:border-rose-600 hover:shadow-lg transition-all duration-300 cursor-pointer flex flex-col justify-between"
                 >
-                  <div className="flex items-start gap-3">
-                    {photo ? (
-                      <div className="w-16 h-16 rounded-xl overflow-hidden flex-shrink-0 border border-stone-200 dark:border-stone-700">
-                        <img
-                          src={photo.url}
-                          alt={moment.title}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform"
-                        />
-                      </div>
-                    ) : (
-                      <div className="w-12 h-12 rounded-xl bg-rose-50 dark:bg-rose-950/60 flex items-center justify-center text-xl flex-shrink-0">
-                        {moment.emoji}
-                      </div>
-                    )}
+                  {/* Subtle Glass Backdrop with Photo */}
+                  {photo && (
+                    <>
+                      <img
+                        src={photo.url}
+                        alt={moment.title}
+                        className="absolute inset-0 w-full h-full object-cover scale-105 group-hover:scale-110 transition-transform duration-500"
+                      />
+                      <div className="absolute inset-0 bg-white/75 dark:bg-black/80 backdrop-blur-[8px] group-hover:backdrop-blur-[4px] group-hover:bg-white/55 dark:group-hover:bg-black/65 transition-all duration-300" />
+                    </>
+                  )}
 
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-1.5 mb-1">
-                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${cat.badgeBg} ${cat.darkBadgeBg}`}>
-                          {cat.label}
-                        </span>
-                        {moment.isMilestone && (
-                          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300">
-                            ⭐ Hito
+                  <div className="relative z-10">
+                    <div className="flex items-start gap-3">
+                      {photo ? (
+                        <div className="w-16 h-16 rounded-xl overflow-hidden flex-shrink-0 border border-white/50 shadow-xs">
+                          <img
+                            src={photo.url}
+                            alt={moment.title}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      ) : (
+                        <div className="w-12 h-12 rounded-xl bg-rose-50 dark:bg-rose-950/60 flex items-center justify-center text-xl flex-shrink-0">
+                          {moment.emoji}
+                        </div>
+                      )}
+
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5 mb-1">
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${cat.badgeBg} ${cat.darkBadgeBg}`}>
+                            {cat.label}
                           </span>
-                        )}
+                          {moment.isMilestone && (
+                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300">
+                              ⭐ Hito
+                            </span>
+                          )}
+                        </div>
+                        <h4 className="font-bold text-stone-900 dark:text-stone-100 text-sm truncate group-hover:text-rose-500 transition-colors">
+                          {moment.title}
+                        </h4>
+                        <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5">
+                          {formatDateSpanish(moment.date)}
+                        </p>
                       </div>
-                      <h4 className="font-bold text-stone-900 dark:text-stone-100 text-sm truncate group-hover:text-rose-500 transition-colors">
-                        {moment.title}
-                      </h4>
-                      <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5">
-                        {formatDateSpanish(moment.date)}
-                      </p>
                     </div>
+
+                    <p className="text-xs text-stone-700 dark:text-stone-300 mt-3 line-clamp-2 italic font-serif">
+                      "{moment.description}"
+                    </p>
                   </div>
 
-                  <p className="text-xs text-stone-600 dark:text-stone-300 mt-3 line-clamp-2 italic font-serif">
-                    "{moment.description}"
-                  </p>
-
                   {moment.location && (
-                    <div className="mt-2.5 pt-2 border-t border-stone-100 dark:border-stone-800 flex items-center gap-1 text-[11px] text-stone-500 dark:text-stone-400 truncate">
+                    <div className="relative z-10 mt-2.5 pt-2 border-t border-stone-200/50 dark:border-stone-800 flex items-center gap-1 text-[11px] text-stone-500 dark:text-stone-400 truncate">
                       <MapPin className="w-3 h-3 text-rose-400 flex-shrink-0" />
                       <span className="truncate">{moment.location}</span>
                     </div>

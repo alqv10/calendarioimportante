@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { X, UserPlus, LogIn, Heart, Lock, User, Sparkles } from 'lucide-react'
 import type { UserProfile } from '../types'
-import { getAllUsers, loginUser, registerUser } from '../services/auth'
+import { getAllUsersLocal, loginUser, registerUser } from '../services/auth'
 import { triggerJoyfulConfetti } from '../services/confetti'
 
 interface AuthModalProps {
@@ -36,13 +36,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
   if (!isOpen) return null
 
-  const existingUsers = getAllUsers()
+  const existingUsers = getAllUsersLocal()
 
-  const handleLoginSubmit = (e: React.FormEvent) => {
+  const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setErrorMsg('')
     try {
-      const user = loginUser(loginUsername, loginPassword)
+      const user = await loginUser(loginUsername, loginPassword)
       triggerJoyfulConfetti()
       onSuccess(user)
       onClose()
@@ -51,7 +51,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     }
   }
 
-  const handleRegisterSubmit = (e: React.FormEvent) => {
+  const handleRegisterSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setErrorMsg('')
     if (!regName.trim() || !regUsername.trim()) {
@@ -60,7 +60,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     }
 
     try {
-      const newUser = registerUser(
+      const newUser = await registerUser(
         regName,
         regUsername,
         regPassword,
@@ -75,9 +75,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     }
   }
 
-  const handleQuickSwitch = (u: UserProfile) => {
+  const handleQuickSwitch = async (u: UserProfile) => {
     try {
-      const logged = loginUser(u.username, u.password)
+      const logged = await loginUser(u.username, u.password)
       triggerJoyfulConfetti()
       onSuccess(logged)
       onClose()

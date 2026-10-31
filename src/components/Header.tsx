@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react'
-import { Calendar, BookOpen, Sparkles, Plus, Download, Upload, Heart, Sun, Moon, LogOut, User } from 'lucide-react'
+import { Calendar, BookOpen, Sparkles, Plus, Download, Upload, Heart, Sun, Moon, LogOut, User, Database } from 'lucide-react'
 import type { ViewMode, MemoryMoment, UserProfile } from '../types'
 import { exportMemoriesJSON, importMemoriesJSON } from '../services/storage'
 import { triggerJoyfulConfetti } from '../services/confetti'
@@ -16,6 +16,8 @@ interface HeaderProps {
   isDarkMode: boolean
   onToggleDarkMode: () => void
   onOpenGraceEasterEgg: () => void
+  onOpenCloudConfig: () => void
+  isCloudConnected: boolean
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -29,7 +31,9 @@ export const Header: React.FC<HeaderProps> = ({
   onLogout,
   isDarkMode,
   onToggleDarkMode,
-  onOpenGraceEasterEgg
+  onOpenGraceEasterEgg,
+  onOpenCloudConfig,
+  isCloudConnected
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [logoClickCount, setLogoClickCount] = useState(0)
@@ -180,6 +184,19 @@ export const Header: React.FC<HeaderProps> = ({
         {/* Right Actions */}
         <div className="flex items-center gap-2">
           
+          {/* Cloud Database Connection */}
+          <button
+            onClick={onOpenCloudConfig}
+            title={isCloudConnected ? "Base de datos en la nube (Conectado)" : "Conectar Base de Datos en la Nube (Supabase)"}
+            className={`p-2 rounded-lg transition-colors border cursor-pointer ${
+              isCloudConnected
+                ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border-emerald-300 dark:border-emerald-800'
+                : 'text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800 border-transparent hover:border-stone-200 dark:hover:border-stone-700'
+            }`}
+          >
+            <Database className="w-4 h-4" />
+          </button>
+
           {/* Dark Mode Toggle */}
           <button
             onClick={onToggleDarkMode}
