@@ -4,6 +4,7 @@ import { CATEGORIES } from '../types'
 import type { MemoryMoment } from '../types'
 import { formatDateSpanish, getTimeAgoSpanish } from '../utils/dateUtils'
 import { triggerAnniversaryExplosion } from '../services/confetti'
+import { MiniAudioPlayer } from './MiniAudioPlayer'
 
 interface MemoryDetailModalProps {
   moment: MemoryMoment | null
@@ -26,6 +27,7 @@ export const MemoryDetailModal: React.FC<MemoryDetailModalProps> = ({
   const photos = moment.photos || []
   const hasPhotos = photos.length > 0
   const timeAgo = getTimeAgoSpanish(moment.date)
+  const hasMusic = !!(moment.songTitle || moment.songUrl || moment.audioData)
 
   const handleCelebrate = () => {
     triggerAnniversaryExplosion()
@@ -45,12 +47,12 @@ export const MemoryDetailModal: React.FC<MemoryDetailModalProps> = ({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 dark:bg-black/80 backdrop-blur-sm overflow-y-auto animate-fade-in">
-      <div className="relative w-full max-w-xl bg-white dark:bg-[#191720] rounded-2xl shadow-2xl border border-stone-200 dark:border-stone-800 overflow-hidden my-8">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 dark:bg-black/80 backdrop-blur-sm overflow-y-auto animate-fade-in">
+      <div className="relative w-full max-w-xl bg-white dark:bg-[#191720] rounded-2xl shadow-2xl border border-stone-200 dark:border-stone-800 overflow-hidden my-4 sm:my-8">
         
         {/* Photo Carousel or Top Graphic */}
         {hasPhotos ? (
-          <div className="relative w-full h-72 sm:h-80 bg-stone-900">
+          <div className="relative w-full h-64 sm:h-80 bg-stone-900">
             <img
               src={photos[activePhotoIdx].url}
               alt={moment.title}
@@ -74,7 +76,6 @@ export const MemoryDetailModal: React.FC<MemoryDetailModalProps> = ({
                   <ChevronRight className="w-5 h-5" />
                 </button>
 
-                {/* Photo indicator dots (geometric bars) */}
                 <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1.5">
                   {photos.map((_, i) => (
                     <span
@@ -89,7 +90,6 @@ export const MemoryDetailModal: React.FC<MemoryDetailModalProps> = ({
               </>
             )}
 
-            {/* Close button on top */}
             <button
               onClick={onClose}
               className="absolute top-4 right-4 p-2 rounded-xl bg-black/40 hover:bg-black/70 text-white backdrop-blur-xs transition-colors cursor-pointer"
@@ -97,8 +97,7 @@ export const MemoryDetailModal: React.FC<MemoryDetailModalProps> = ({
               <X className="w-5 h-5" />
             </button>
 
-            {/* Title floating over photo */}
-            <div className="absolute bottom-6 left-6 right-6 text-white">
+            <div className="absolute bottom-5 left-5 right-5 text-white">
               <div className="flex items-center gap-2 mb-1.5">
                 <span className={`text-xs font-bold px-2 py-0.5 rounded-md ${cat.badgeBg} ${cat.darkBadgeBg}`}>
                   {cat.emoji} {cat.label}
@@ -139,7 +138,7 @@ export const MemoryDetailModal: React.FC<MemoryDetailModalProps> = ({
         )}
 
         {/* Modal Body */}
-        <div className="p-6 space-y-4 max-h-[60vh] overflow-y-auto">
+        <div className="p-4 sm:p-6 space-y-4 max-h-[60vh] overflow-y-auto">
           
           {/* Metadata Row: Date & Time Ago */}
           <div className="flex flex-wrap items-center justify-between gap-2 p-3 bg-rose-50/50 dark:bg-rose-950/30 rounded-xl border border-rose-100 dark:border-rose-900/40">
@@ -151,6 +150,16 @@ export const MemoryDetailModal: React.FC<MemoryDetailModalProps> = ({
               ✨ {timeAgo}
             </span>
           </div>
+
+          {/* Music Player if exists */}
+          {hasMusic && (
+            <MiniAudioPlayer
+              audioData={moment.audioData}
+              songTitle={moment.songTitle}
+              songArtist={moment.songArtist}
+              songUrl={moment.songUrl}
+            />
+          )}
 
           {/* Location with Google Maps link */}
           {moment.location && (

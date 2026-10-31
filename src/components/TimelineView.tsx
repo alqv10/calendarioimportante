@@ -3,6 +3,7 @@ import { Search, Calendar, MapPin, ArrowUpDown, Plus } from 'lucide-react'
 import { CATEGORIES } from '../types'
 import type { MemoryMoment } from '../types'
 import { formatDateSpanish, getTimeAgoSpanish } from '../utils/dateUtils'
+import { MiniAudioPlayer } from './MiniAudioPlayer'
 
 interface TimelineViewProps {
   memories: MemoryMoment[]
@@ -28,7 +29,9 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
           !searchTerm ||
           m.title.toLowerCase().includes(term) ||
           m.description.toLowerCase().includes(term) ||
-          (m.location && m.location.toLowerCase().includes(term))
+          (m.location && m.location.toLowerCase().includes(term)) ||
+          (m.songTitle && m.songTitle.toLowerCase().includes(term)) ||
+          (m.songArtist && m.songArtist.toLowerCase().includes(term))
         return matchesCategory && matchesSearch
       })
       .sort((a, b) => {
@@ -42,7 +45,7 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
     <div className="space-y-6">
       
       {/* Controls & Filter Bar */}
-      <div className="bg-white/95 dark:bg-[#181620]/95 backdrop-blur rounded-2xl p-5 sm:p-6 border border-stone-200 dark:border-stone-800 shadow-sm space-y-4 transition-colors">
+      <div className="bg-white/95 dark:bg-[#181620]/95 backdrop-blur rounded-2xl p-4 sm:p-6 border border-stone-200 dark:border-stone-800 shadow-sm space-y-4 transition-colors">
         <div className="flex flex-col sm:flex-row gap-3 items-center justify-between">
           
           {/* Search Input */}
@@ -52,7 +55,7 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
               type="text"
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
-              placeholder="Buscar momentos, lugares, notas..."
+              placeholder="Buscar momentos, canciones, lugares..."
               className="w-full pl-10 pr-4 py-2 rounded-xl bg-stone-50 dark:bg-stone-900 border border-stone-200 dark:border-stone-700 text-stone-900 dark:text-stone-100 placeholder:text-stone-400 text-xs sm:text-sm font-medium focus:outline-none focus:ring-2 focus:ring-rose-400"
             />
             {searchTerm && (
@@ -76,7 +79,7 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
 
         </div>
 
-        {/* Category Pills (geometric rounded-lg) */}
+        {/* Category Pills */}
         <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar">
           <button
             onClick={() => setSelectedCategory('all')}
@@ -141,6 +144,7 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
             const cat = CATEGORIES[moment.category] || CATEGORIES.otro
             const firstPhoto = moment.photos?.[0]
             const timeAgo = getTimeAgoSpanish(moment.date)
+            const hasMusic = !!(moment.songTitle || moment.songUrl || moment.audioData)
 
             return (
               <div
@@ -184,7 +188,7 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
                 )}
 
                 {/* Content */}
-                <div className="p-4 sm:p-5 flex-1 flex flex-col justify-between">
+                <div className="p-4 sm:p-5 flex-1 flex flex-col justify-between space-y-3">
                   <div>
                     <div className="flex items-center justify-between gap-2 mb-1.5">
                       <span className="text-xs font-semibold text-rose-500 flex items-center gap-1">
@@ -201,14 +205,27 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
                     </h3>
 
                     {moment.description && (
-                      <p className="mt-2.5 text-xs text-stone-600 dark:text-stone-300 line-clamp-3 leading-relaxed font-sans">
+                      <p className="mt-2 text-xs text-stone-600 dark:text-stone-300 line-clamp-2 leading-relaxed font-sans">
                         {moment.description}
                       </p>
                     )}
                   </div>
 
+                  {/* Compact Music Badge if memory has a song */}
+                  {hasMusic && (
+                    <div className="pt-1">
+                      <MiniAudioPlayer
+                        audioData={moment.audioData}
+                        songTitle={moment.songTitle}
+                        songArtist={moment.songArtist}
+                        songUrl={moment.songUrl}
+                        compact
+                      />
+                    </div>
+                  )}
+
                   {moment.location && (
-                    <div className="mt-4 pt-3 border-t border-stone-100 dark:border-stone-800 flex items-center gap-1.5 text-xs text-stone-500 dark:text-stone-400">
+                    <div className="pt-2 border-t border-stone-100 dark:border-stone-800 flex items-center gap-1.5 text-xs text-stone-500 dark:text-stone-400">
                       <MapPin className="w-3.5 h-3.5 text-rose-400 flex-shrink-0" />
                       <span className="truncate">{moment.location}</span>
                     </div>

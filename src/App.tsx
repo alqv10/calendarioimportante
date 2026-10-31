@@ -8,6 +8,7 @@ import { MemoryDetailModal } from './components/MemoryDetailModal'
 import { DayMomentsModal } from './components/DayMomentsModal'
 import { AuthModal } from './components/AuthModal'
 import { GraceEasterEggModal } from './components/GraceEasterEggModal'
+import { BottomNav } from './components/BottomNav'
 import type { MemoryMoment, ViewMode, UserProfile } from './types'
 import { getAllMemories, saveMemory, deleteMemory } from './services/storage'
 import { getCurrentUser, logoutUser } from './services/auth'
@@ -69,7 +70,6 @@ export function App() {
   useEffect(() => {
     let typedSequence = ''
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Ignore if user is currently typing in an input or textarea
       const target = e.target as HTMLElement
       if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') return
 
@@ -131,9 +131,9 @@ export function App() {
     : []
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#faf7f4] dark:bg-[#121118] text-stone-800 dark:text-stone-100 transition-colors">
+    <div className="min-h-screen flex flex-col bg-[#faf7f4] dark:bg-[#121118] text-stone-800 dark:text-stone-100 transition-colors pb-16 md:pb-0">
       
-      {/* Top cheerful navigation bar */}
+      {/* Top navigation bar */}
       <Header
         currentView={currentView}
         onViewChange={setCurrentView}
@@ -149,7 +149,7 @@ export function App() {
       />
 
       {/* Main Content Area */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-8 py-6 sm:py-8">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-8 py-5 sm:py-8">
         {isLoading ? (
           <div className="flex flex-col items-center justify-center min-h-[50vh]">
             <div className="w-10 h-10 rounded-lg border-4 border-rose-300 border-t-rose-600 animate-spin mb-4" />
@@ -188,27 +188,34 @@ export function App() {
         )}
       </main>
 
-      {/* Joyful Footer with Secret Easter Egg Trigger */}
+      {/* Footer */}
       <footer className="border-t border-stone-200/80 dark:border-stone-800 bg-white/70 dark:bg-[#15131c]/70 py-6 text-center text-xs text-stone-500 dark:text-stone-400 transition-colors">
         <div className="flex flex-wrap items-center justify-center gap-1.5 font-medium">
           <span>Hecho con</span>
           <Heart className="w-3.5 h-3.5 text-rose-500 fill-rose-500 inline animate-bounce" />
-          <span>para guardar cada instante que nos hace sonreír</span>
+          <span>para guardar cada instante especial</span>
           <Sparkles className="w-3 h-3 text-amber-500 inline" />
-          <span>•</span>
           <button
             onClick={() => setIsGraceEasterEggOpen(true)}
-            title="Easter egg dedicado a Grace 🌹 (Toca para ver)"
-            className="inline-flex items-center gap-1 text-rose-500 hover:text-rose-600 dark:hover:text-rose-400 font-bold hover:underline cursor-pointer"
+            title="✨"
+            className="text-stone-300 dark:text-stone-700 hover:text-rose-400 dark:hover:text-rose-400 transition-colors cursor-pointer ml-1"
           >
-            <Flower2 className="w-3.5 h-3.5 text-rose-500" />
-            <span>Para Grace</span>
+            <Flower2 className="w-3 h-3 inline" />
           </button>
         </div>
         <p className="text-[11px] text-stone-400 dark:text-stone-500 mt-1">
-          Tus recuerdos se guardan de forma privada en tu navegador. Presiona <strong>G-R-A-C-E</strong> en tu teclado para la sorpresa.
+          Guarda tus fotos, música y lugares en cualquier pantalla.
         </p>
       </footer>
+
+      {/* Mobile Bottom Navigation */}
+      <BottomNav
+        currentView={currentView}
+        onViewChange={setCurrentView}
+        onNewMoment={() => handleOpenNewForm()}
+        isDarkMode={isDarkMode}
+        onToggleDarkMode={toggleDarkMode}
+      />
 
       {/* Modals */}
       <MemoryFormModal

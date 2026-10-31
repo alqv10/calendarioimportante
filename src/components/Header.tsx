@@ -1,4 +1,4 @@
-import { useRef } from 'react'
+import { useRef, useState } from 'react'
 import { Calendar, BookOpen, Sparkles, Plus, Download, Upload, Heart, Sun, Moon, LogOut, User } from 'lucide-react'
 import type { ViewMode, MemoryMoment, UserProfile } from '../types'
 import { exportMemoriesJSON, importMemoriesJSON } from '../services/storage'
@@ -32,6 +32,24 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenGraceEasterEgg
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const [logoClickCount, setLogoClickCount] = useState(0)
+  const lastLogoClickRef = useRef<number>(0)
+
+  const handleLogoClick = () => {
+    const now = Date.now()
+    if (now - lastLogoClickRef.current < 600) {
+      const nextCount = logoClickCount + 1
+      if (nextCount >= 3) {
+        onOpenGraceEasterEgg()
+        setLogoClickCount(0)
+      } else {
+        setLogoClickCount(nextCount)
+      }
+    } else {
+      setLogoClickCount(1)
+    }
+    lastLogoClickRef.current = now
+  }
 
   const handleExport = async () => {
     try {
@@ -80,14 +98,13 @@ export const Header: React.FC<HeaderProps> = ({
     <header className="sticky top-0 z-30 bg-white/90 dark:bg-[#16141c]/90 backdrop-blur-md border-b border-stone-200/80 dark:border-stone-800/80 px-4 sm:px-8 py-3 transition-colors">
       <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-3">
         
-        {/* Brand / Logo */}
-        <div className="flex items-center gap-3">
-          <div
-            onClick={onOpenGraceEasterEgg}
-            title="Dedicado a Grace 🌹 (Toca para ver sorpresa)"
-            className="group relative cursor-pointer"
-          >
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-rose-500 to-amber-500 flex items-center justify-center text-white shadow-sm shadow-rose-500/20 transform transition-transform group-hover:scale-105">
+        {/* Brand / Logo (Secret: 3 clicks activates Easter Egg for Grace) */}
+        <div
+          onClick={handleLogoClick}
+          className="flex items-center gap-3 cursor-pointer select-none group"
+        >
+          <div className="relative">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-rose-500 to-amber-500 flex items-center justify-center text-white shadow-sm shadow-rose-500/20 transform transition-transform group-hover:scale-105 active:scale-95">
               <Heart className="w-5 h-5 fill-white stroke-white animate-pulse" />
             </div>
             <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
@@ -108,7 +125,7 @@ export const Header: React.FC<HeaderProps> = ({
             </div>
             <p className="text-xs text-stone-500 dark:text-stone-400 hidden sm:block">
               {currentUser?.partnerName ? (
-                <>Nuestra historia de amor junto a <strong className="text-rose-500">{currentUser.partnerName}</strong></>
+                <>Nuestra historia de momentos junto a <strong className="text-rose-500">{currentUser.partnerName}</strong></>
               ) : (
                 'El calendario de los días que cambiaron nuestra historia'
               )}
@@ -116,8 +133,8 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         </div>
 
-        {/* View Switcher Tabs (Less circular, crisp geometric rounded-xl) */}
-        <div className="flex items-center bg-stone-100 dark:bg-stone-900 p-1 rounded-xl border border-stone-200/80 dark:border-stone-800">
+        {/* View Switcher Tabs (Desktop / Tablet) */}
+        <div className="hidden md:flex items-center bg-stone-100 dark:bg-stone-900 p-1 rounded-xl border border-stone-200/80 dark:border-stone-800">
           <button
             onClick={() => onViewChange('calendar')}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all cursor-pointer ${
@@ -160,19 +177,9 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
         </div>
 
-        {/* Right Actions: Dark mode, Account, Export/Import, Add Moment */}
+        {/* Right Actions */}
         <div className="flex items-center gap-2">
           
-          {/* Secret Grace Easter Egg Button */}
-          <button
-            onClick={onOpenGraceEasterEgg}
-            title="Dedicado a Grace 🌹"
-            className="flex items-center gap-1 text-xs font-bold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/60 hover:bg-rose-100 dark:hover:bg-rose-900/60 border border-rose-200 dark:border-rose-900/80 px-2.5 py-1.5 rounded-lg transition-all cursor-pointer"
-          >
-            <span>Grace</span>
-            <span>🌹</span>
-          </button>
-
           {/* Dark Mode Toggle */}
           <button
             onClick={onToggleDarkMode}
@@ -186,7 +193,7 @@ export const Header: React.FC<HeaderProps> = ({
             )}
           </button>
 
-          {/* Backups */}
+          {/* Backup Inputs */}
           <input
             type="file"
             ref={fileInputRef}
@@ -240,13 +247,13 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
           )}
 
-          {/* New Moment Button */}
+          {/* New Moment Button (Desktop) */}
           <button
             onClick={onNewMoment}
-            className="flex items-center gap-1.5 bg-gradient-to-r from-rose-500 to-amber-500 hover:from-rose-600 hover:to-amber-600 text-white font-semibold text-xs sm:text-sm px-3.5 py-2 rounded-xl shadow-sm transition-all transform hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
+            className="hidden sm:flex items-center gap-1.5 bg-gradient-to-r from-rose-500 to-amber-500 hover:from-rose-600 hover:to-amber-600 text-white font-semibold text-xs sm:text-sm px-3.5 py-2 rounded-xl shadow-sm transition-all transform hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
           >
             <Plus className="w-4 h-4 stroke-[2.5]" />
-            <span className="hidden sm:inline">Nuevo Recuerdo</span>
+            <span>Nuevo Recuerdo</span>
           </button>
         </div>
 

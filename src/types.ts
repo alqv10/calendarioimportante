@@ -38,6 +38,13 @@ export interface MemoryMoment {
   photos: MemoryPhoto[]
   feeling?: 'amor' | 'feliz' | 'divertido' | 'emocionante' | 'nostalgico' | 'magico'
   isMilestone?: boolean
+  
+  // Music fields
+  songTitle?: string
+  songArtist?: string
+  songUrl?: string // External Spotify/YouTube link
+  audioData?: string // Base64 audio file (.mp3, .wav, .m4a)
+  
   createdAt: number
   updatedAt: number
 }
