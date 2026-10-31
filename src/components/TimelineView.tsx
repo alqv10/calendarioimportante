@@ -42,7 +42,7 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
     <div className="space-y-6">
       
       {/* Controls & Filter Bar */}
-      <div className="bg-white/90 backdrop-blur rounded-3xl p-5 sm:p-6 border border-stone-200/80 shadow-sm space-y-4">
+      <div className="bg-white/95 dark:bg-[#181620]/95 backdrop-blur rounded-2xl p-5 sm:p-6 border border-stone-200 dark:border-stone-800 shadow-sm space-y-4 transition-colors">
         <div className="flex flex-col sm:flex-row gap-3 items-center justify-between">
           
           {/* Search Input */}
@@ -53,12 +53,12 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
               placeholder="Buscar momentos, lugares, notas..."
-              className="w-full pl-10 pr-4 py-2 rounded-xl bg-stone-50 border border-stone-200 focus:outline-none focus:ring-2 focus:ring-rose-400 text-xs sm:text-sm font-medium"
+              className="w-full pl-10 pr-4 py-2 rounded-xl bg-stone-50 dark:bg-stone-900 border border-stone-200 dark:border-stone-700 text-stone-900 dark:text-stone-100 placeholder:text-stone-400 text-xs sm:text-sm font-medium focus:outline-none focus:ring-2 focus:ring-rose-400"
             />
             {searchTerm && (
               <button
                 onClick={() => setSearchTerm('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-stone-400 hover:text-stone-600"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-stone-400 hover:text-stone-600 dark:hover:text-stone-200"
               >
                 ✕
               </button>
@@ -68,7 +68,7 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
           {/* Sort order toggle */}
           <button
             onClick={() => setSortOrder(prev => prev === 'desc' ? 'asc' : 'desc')}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-stone-200 text-xs font-semibold text-stone-700 hover:bg-stone-50 cursor-pointer self-end sm:self-auto"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-stone-900 text-xs font-semibold text-stone-700 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800 cursor-pointer self-end sm:self-auto transition-colors"
           >
             <ArrowUpDown className="w-3.5 h-3.5 text-rose-500" />
             <span>{sortOrder === 'desc' ? 'Más recientes primero' : 'Más antiguos primero'}</span>
@@ -76,14 +76,14 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
 
         </div>
 
-        {/* Category Pills */}
+        {/* Category Pills (geometric rounded-lg) */}
         <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar">
           <button
             onClick={() => setSelectedCategory('all')}
-            className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-1 whitespace-nowrap cursor-pointer ${
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1 whitespace-nowrap cursor-pointer ${
               selectedCategory === 'all'
                 ? 'bg-rose-500 text-white shadow-xs'
-                : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
+                : 'bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-300 hover:bg-stone-200 dark:hover:bg-stone-700'
             }`}
           >
             <span>💖 Todos ({memories.length})</span>
@@ -97,10 +97,10 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
               <button
                 key={cat.key}
                 onClick={() => setSelectedCategory(cat.key)}
-                className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all flex items-center gap-1 whitespace-nowrap cursor-pointer ${
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1 whitespace-nowrap cursor-pointer ${
                   selectedCategory === cat.key
                     ? `${cat.color} text-white shadow-xs`
-                    : `${cat.badgeBg} hover:opacity-80`
+                    : `${cat.badgeBg} ${cat.darkBadgeBg} hover:opacity-80`
                 }`}
               >
                 <span>{cat.emoji}</span>
@@ -115,16 +115,16 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
 
       {/* Feed / Cards Grid */}
       {filteredMemories.length === 0 ? (
-        <div className="bg-white/80 rounded-3xl p-12 text-center border border-stone-200 max-w-lg mx-auto">
-          <div className="w-16 h-16 mx-auto rounded-3xl bg-rose-50 flex items-center justify-center text-3xl mb-3">
+        <div className="bg-white/80 dark:bg-[#181620]/80 rounded-2xl p-12 text-center border border-stone-200 dark:border-stone-800 max-w-lg mx-auto">
+          <div className="w-14 h-14 mx-auto rounded-xl bg-rose-50 dark:bg-rose-950/60 flex items-center justify-center text-3xl mb-3">
             ✨
           </div>
-          <h3 className="text-lg font-bold text-stone-800">
+          <h3 className="text-lg font-bold text-stone-800 dark:text-stone-100">
             No se encontraron recuerdos
           </h3>
-          <p className="text-xs text-stone-500 mt-1 max-w-sm mx-auto">
+          <p className="text-xs text-stone-500 dark:text-stone-400 mt-1 max-w-sm mx-auto">
             {searchTerm
-              ? `No hay momentos que coincidan con "${searchTerm}". Prueba con otra palabra clave.`
+              ? `No hay momentos que coincidan con "${searchTerm}".`
               : 'Aún no has registrado momentos en esta categoría.'}
           </p>
           <button
@@ -136,7 +136,7 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {filteredMemories.map(moment => {
             const cat = CATEGORIES[moment.category] || CATEGORIES.otro
             const firstPhoto = moment.photos?.[0]
@@ -146,69 +146,69 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
               <div
                 key={moment.id}
                 onClick={() => onSelectMoment(moment)}
-                className="group bg-white rounded-3xl overflow-hidden border border-stone-200/90 shadow-sm hover:shadow-xl hover:border-rose-300 transition-all duration-300 cursor-pointer flex flex-col justify-between"
+                className="group bg-white dark:bg-[#191722] rounded-2xl overflow-hidden border border-stone-200 dark:border-stone-800 shadow-xs hover:shadow-lg hover:border-rose-300 dark:hover:border-rose-700 transition-all duration-300 cursor-pointer flex flex-col justify-between"
               >
-                {/* Photo Top Header or Polaroid Card */}
+                {/* Photo Top Header */}
                 {firstPhoto ? (
-                  <div className="relative aspect-4/3 overflow-hidden bg-stone-100">
+                  <div className="relative aspect-4/3 overflow-hidden bg-stone-100 dark:bg-stone-800">
                     <img
                       src={firstPhoto.url}
                       alt={moment.title}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     />
                     <div className="absolute top-3 left-3 flex items-center gap-1.5">
-                      <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full shadow-xs backdrop-blur-md bg-white/90 text-stone-900`}>
+                      <span className={`text-[11px] font-bold px-2 py-0.5 rounded-md shadow-xs backdrop-blur-md bg-white/95 dark:bg-stone-900/95 text-stone-900 dark:text-stone-100`}>
                         {cat.emoji} {cat.label}
                       </span>
                       {moment.isMilestone && (
-                        <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-400 text-stone-900 shadow-xs">
+                        <span className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-amber-400 text-stone-900 shadow-xs">
                           ⭐ Hito
                         </span>
                       )}
                     </div>
                     {moment.photos.length > 1 && (
-                      <span className="absolute bottom-3 right-3 bg-black/60 backdrop-blur-xs text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+                      <span className="absolute bottom-3 right-3 bg-black/70 backdrop-blur-xs text-white text-[10px] font-bold px-2 py-0.5 rounded-md">
                         +{moment.photos.length} fotos
                       </span>
                     )}
                   </div>
                 ) : (
-                  <div className="p-6 bg-gradient-to-br from-rose-50 to-amber-50/50 border-b border-stone-100">
+                  <div className="p-5 bg-gradient-to-br from-rose-50 to-amber-50/50 dark:from-rose-950/30 dark:to-stone-900/40 border-b border-stone-100 dark:border-stone-800">
                     <div className="flex items-center justify-between">
-                      <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full ${cat.badgeBg}`}>
+                      <span className={`text-xs font-bold px-2 py-0.5 rounded-md ${cat.badgeBg} ${cat.darkBadgeBg}`}>
                         {cat.emoji} {cat.label}
                       </span>
-                      <span className="text-3xl">{moment.emoji}</span>
+                      <span className="text-2xl">{moment.emoji}</span>
                     </div>
                   </div>
                 )}
 
                 {/* Content */}
-                <div className="p-5 flex-1 flex flex-col justify-between">
+                <div className="p-4 sm:p-5 flex-1 flex flex-col justify-between">
                   <div>
                     <div className="flex items-center justify-between gap-2 mb-1.5">
                       <span className="text-xs font-semibold text-rose-500 flex items-center gap-1">
                         <Calendar className="w-3.5 h-3.5" />
                         {formatDateSpanish(moment.date)}
                       </span>
-                      <span className="text-[11px] font-medium text-stone-400">
+                      <span className="text-[11px] font-medium text-stone-400 dark:text-stone-500">
                         {timeAgo}
                       </span>
                     </div>
 
-                    <h3 className="text-lg font-bold text-stone-900 group-hover:text-rose-600 transition-colors leading-snug">
+                    <h3 className="text-base sm:text-lg font-bold text-stone-900 dark:text-white group-hover:text-rose-500 transition-colors leading-snug">
                       {moment.title}
                     </h3>
 
                     {moment.description && (
-                      <p className="mt-2.5 text-xs text-stone-600 line-clamp-3 leading-relaxed font-sans">
+                      <p className="mt-2.5 text-xs text-stone-600 dark:text-stone-300 line-clamp-3 leading-relaxed font-sans">
                         {moment.description}
                       </p>
                     )}
                   </div>
 
                   {moment.location && (
-                    <div className="mt-4 pt-3 border-t border-stone-100 flex items-center gap-1.5 text-xs text-stone-500">
+                    <div className="mt-4 pt-3 border-t border-stone-100 dark:border-stone-800 flex items-center gap-1.5 text-xs text-stone-500 dark:text-stone-400">
                       <MapPin className="w-3.5 h-3.5 text-rose-400 flex-shrink-0" />
                       <span className="truncate">{moment.location}</span>
                     </div>

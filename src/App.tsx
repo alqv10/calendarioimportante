@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Header } from './components/Header'
 import { CalendarView } from './components/CalendarView'
 import { TimelineView } from './components/TimelineView'
@@ -6,41 +6,91 @@ import { MilestonesView } from './components/MilestonesView'
 import { MemoryFormModal } from './components/MemoryFormModal'
 import { MemoryDetailModal } from './components/MemoryDetailModal'
 import { DayMomentsModal } from './components/DayMomentsModal'
-import type { MemoryMoment, ViewMode } from './types'
+import { AuthModal } from './components/AuthModal'
+import { GraceEasterEggModal } from './components/GraceEasterEggModal'
+import type { MemoryMoment, ViewMode, UserProfile } from './types'
 import { getAllMemories, saveMemory, deleteMemory } from './services/storage'
-import { Heart, Sparkles } from 'lucide-react'
+import { getCurrentUser, logoutUser } from './services/auth'
+import { Heart, Sparkles, Flower2 } from 'lucide-react'
 
 export function App() {
+  const [currentUser, setCurrentUser] = useState<UserProfile | null>(() => getCurrentUser())
   const [memories, setMemories] = useState<MemoryMoment[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [currentView, setCurrentView] = useState<ViewMode>('calendar')
+
+  // Dark Mode state
+  const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
+    const saved = localStorage.getItem('momentos_theme')
+    if (saved) return saved === 'dark'
+    return window.matchMedia('(prefers-color-scheme: dark)').matches
+  })
 
   // Modals state
   const [isFormOpen, setIsFormOpen] = useState(false)
   const [formInitialDate, setFormInitialDate] = useState<string | undefined>()
   const [editingMoment, setEditingMoment] = useState<MemoryMoment | null>(null)
-
   const [selectedMoment, setSelectedMoment] = useState<MemoryMoment | null>(null)
   const [dayModalDate, setDayModalDate] = useState<string | null>(null)
+  const [isAuthOpen, setIsAuthOpen] = useState(false)
+  const [isGraceEasterEggOpen, setIsGraceEasterEggOpen] = useState(false)
 
-  const fetchMemories = async () => {
+  // Sync dark mode class on document
+  useEffect(() => {
+    if (isDarkMode) {
+      document.documentElement.classList.add('dark')
+      localStorage.setItem('momentos_theme', 'dark')
+    } else {
+      document.documentElement.classList.remove('dark')
+      localStorage.setItem('momentos_theme', 'light')
+    }
+  }, [isDarkMode])
+
+  const toggleDarkMode = () => {
+    setIsDarkMode(prev => !prev)
+  }
+
+  // Load memories for current user
+  const fetchMemories = useCallback(async () => {
     setIsLoading(true)
     try {
-      const data = await getAllMemories()
+      const data = await getAllMemories(currentUser?.id)
       setMemories(data)
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [currentUser])
 
   useEffect(() => {
     fetchMemories()
+  }, [fetchMemories])
+
+  // Global Easter Egg Keyboard Listener: typing "grace" opens the secret modal!
+  useEffect(() => {
+    let typedSequence = ''
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ignore if user is currently typing in an input or textarea
+      const target = e.target as HTMLElement
+      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') return
+
+      typedSequence += e.key.toLowerCase()
+      if (typedSequence.length > 10) {
+        typedSequence = typedSequence.slice(-10)
+      }
+
+      if (typedSequence.endsWith('grace')) {
+        setIsGraceEasterEggOpen(true)
+        typedSequence = ''
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
   }, [])
 
   const handleSaveMemory = async (moment: MemoryMoment) => {
-    await saveMemory(moment)
+    await saveMemory(moment, currentUser?.id)
     await fetchMemories()
-    // If the saved moment was currently open in detail modal, update it
     if (selectedMoment?.id === moment.id) {
       setSelectedMoment(moment)
     }
@@ -66,12 +116,22 @@ export function App() {
     setDayModalDate(dateStr)
   }
 
+  const handleLogout = () => {
+    logoutUser()
+    setCurrentUser(null)
+    fetchMemories()
+  }
+
+  const handleAuthSuccess = (user: UserProfile) => {
+    setCurrentUser(user)
+  }
+
   const dayMoments = dayModalDate
     ? memories.filter(m => m.date === dayModalDate)
     : []
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#faf7f4] text-stone-800">
+    <div className="min-h-screen flex flex-col bg-[#faf7f4] dark:bg-[#121118] text-stone-800 dark:text-stone-100 transition-colors">
       
       {/* Top cheerful navigation bar */}
       <Header
@@ -80,14 +140,20 @@ export function App() {
         onNewMoment={() => handleOpenNewForm()}
         memories={memories}
         onReload={fetchMemories}
+        currentUser={currentUser}
+        onOpenAuth={() => setIsAuthOpen(true)}
+        onLogout={handleLogout}
+        isDarkMode={isDarkMode}
+        onToggleDarkMode={toggleDarkMode}
+        onOpenGraceEasterEgg={() => setIsGraceEasterEggOpen(true)}
       />
 
       {/* Main Content Area */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-8 py-6 sm:py-8">
         {isLoading ? (
           <div className="flex flex-col items-center justify-center min-h-[50vh]">
-            <div className="w-12 h-12 rounded-full border-4 border-rose-300 border-t-rose-600 animate-spin mb-4" />
-            <p className="text-stone-500 font-semibold text-sm">
+            <div className="w-10 h-10 rounded-lg border-4 border-rose-300 border-t-rose-600 animate-spin mb-4" />
+            <p className="text-stone-500 dark:text-stone-400 font-semibold text-sm">
               Cargando momentos felices... ✨
             </p>
           </div>
@@ -115,22 +181,32 @@ export function App() {
                 memories={memories}
                 onSelectMoment={setSelectedMoment}
                 onNewMoment={() => handleOpenNewForm()}
+                currentUser={currentUser}
               />
             )}
           </>
         )}
       </main>
 
-      {/* Joyful Footer */}
-      <footer className="border-t border-stone-200/80 bg-white/70 py-6 text-center text-xs text-stone-500">
-        <div className="flex items-center justify-center gap-1.5 font-medium">
+      {/* Joyful Footer with Secret Easter Egg Trigger */}
+      <footer className="border-t border-stone-200/80 dark:border-stone-800 bg-white/70 dark:bg-[#15131c]/70 py-6 text-center text-xs text-stone-500 dark:text-stone-400 transition-colors">
+        <div className="flex flex-wrap items-center justify-center gap-1.5 font-medium">
           <span>Hecho con</span>
-          <Heart className="w-4 h-4 text-rose-500 fill-rose-500 inline animate-bounce" />
+          <Heart className="w-3.5 h-3.5 text-rose-500 fill-rose-500 inline animate-bounce" />
           <span>para guardar cada instante que nos hace sonreír</span>
-          <Sparkles className="w-3.5 h-3.5 text-amber-500 inline" />
+          <Sparkles className="w-3 h-3 text-amber-500 inline" />
+          <span>•</span>
+          <button
+            onClick={() => setIsGraceEasterEggOpen(true)}
+            title="Easter egg dedicado a Grace 🌹 (Toca para ver)"
+            className="inline-flex items-center gap-1 text-rose-500 hover:text-rose-600 dark:hover:text-rose-400 font-bold hover:underline cursor-pointer"
+          >
+            <Flower2 className="w-3.5 h-3.5 text-rose-500" />
+            <span>Para Grace</span>
+          </button>
         </div>
-        <p className="text-[11px] text-stone-400 mt-1">
-          Tus recuerdos y fotos se guardan en tu navegador de forma 100% privada y segura.
+        <p className="text-[11px] text-stone-400 dark:text-stone-500 mt-1">
+          Tus recuerdos se guardan de forma privada en tu navegador. Presiona <strong>G-R-A-C-E</strong> en tu teclado para la sorpresa.
         </p>
       </footer>
 
@@ -157,6 +233,17 @@ export function App() {
         moments={dayMoments}
         onSelectMoment={setSelectedMoment}
         onAddNew={handleOpenNewForm}
+      />
+
+      <AuthModal
+        isOpen={isAuthOpen}
+        onClose={() => setIsAuthOpen(false)}
+        onSuccess={handleAuthSuccess}
+      />
+
+      <GraceEasterEggModal
+        isOpen={isGraceEasterEggOpen}
+        onClose={() => setIsGraceEasterEggOpen(false)}
       />
 
     </div>

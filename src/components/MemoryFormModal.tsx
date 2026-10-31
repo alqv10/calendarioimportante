@@ -3,7 +3,6 @@ import type React from 'react'
 import { X, Upload, Trash2, MapPin, Sparkles, Heart, Image as ImageIcon, Calendar } from 'lucide-react'
 import { CATEGORIES } from '../types'
 import type { MemoryMoment, CategoryType, MemoryPhoto } from '../types'
-import { triggerJoyfulConfetti } from '../services/confetti'
 
 interface MemoryFormModalProps {
   isOpen: boolean
@@ -75,7 +74,6 @@ export const MemoryFormModal: React.FC<MemoryFormModalProps> = ({
     let processed = 0
 
     Array.from(files).forEach((file) => {
-      // Basic image size safeguard: resize or read as base64 data URL
       const reader = new FileReader()
       reader.onload = (event) => {
         const url = event.target?.result as string
@@ -125,13 +123,12 @@ export const MemoryFormModal: React.FC<MemoryFormModalProps> = ({
     }
 
     onSave(moment)
-    triggerJoyfulConfetti()
     onClose()
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/60 backdrop-blur-sm overflow-y-auto animate-fade-in">
-      <div className="relative w-full max-w-xl bg-white rounded-3xl shadow-2xl border border-stone-200 overflow-hidden my-8">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 dark:bg-black/80 backdrop-blur-sm overflow-y-auto animate-fade-in">
+      <div className="relative w-full max-w-xl bg-white dark:bg-[#191720] rounded-2xl shadow-2xl border border-stone-200 dark:border-stone-800 overflow-hidden my-8">
         
         {/* Header */}
         <div className="relative bg-gradient-to-r from-rose-500 via-rose-600 to-amber-500 p-6 text-white">
@@ -144,7 +141,7 @@ export const MemoryFormModal: React.FC<MemoryFormModalProps> = ({
             </div>
             <button
               onClick={onClose}
-              className="p-1.5 rounded-full hover:bg-white/20 text-white transition-colors cursor-pointer"
+              className="p-1.5 rounded-lg hover:bg-white/20 text-white transition-colors cursor-pointer"
             >
               <X className="w-5 h-5" />
             </button>
@@ -160,7 +157,7 @@ export const MemoryFormModal: React.FC<MemoryFormModalProps> = ({
           {/* Title & Date */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div className="sm:col-span-2">
-              <label className="block text-xs font-bold text-stone-700 uppercase tracking-wider mb-1.5">
+              <label className="block text-xs font-bold text-stone-700 dark:text-stone-300 uppercase tracking-wider mb-1.5">
                 ¿Qué momento celebramos? *
               </label>
               <input
@@ -168,13 +165,13 @@ export const MemoryFormModal: React.FC<MemoryFormModalProps> = ({
                 required
                 value={title}
                 onChange={e => setTitle(e.target.value)}
-                placeholder="Ej. Nuestra primera cita, Cena de aniversario..."
-                className="w-full px-4 py-2.5 rounded-xl border border-stone-200 focus:outline-none focus:ring-2 focus:ring-rose-400 font-medium text-stone-900 text-sm placeholder:text-stone-400"
+                placeholder="Ej. Nuestra primera cita, Cena especial..."
+                className="w-full px-3.5 py-2.5 rounded-xl border border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-stone-900 text-stone-900 dark:text-stone-100 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-rose-400 font-medium text-sm"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-stone-700 uppercase tracking-wider mb-1.5 flex items-center gap-1">
+              <label className="block text-xs font-bold text-stone-700 dark:text-stone-300 uppercase tracking-wider mb-1.5 flex items-center gap-1">
                 <Calendar className="w-3.5 h-3.5 text-rose-500" />
                 Fecha *
               </label>
@@ -183,14 +180,14 @@ export const MemoryFormModal: React.FC<MemoryFormModalProps> = ({
                 required
                 value={date}
                 onChange={e => setDate(e.target.value)}
-                className="w-full px-3 py-2.5 rounded-xl border border-stone-200 focus:outline-none focus:ring-2 focus:ring-rose-400 font-medium text-stone-900 text-sm"
+                className="w-full px-3 py-2.5 rounded-xl border border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-stone-900 text-stone-900 dark:text-stone-100 focus:outline-none focus:ring-2 focus:ring-rose-400 font-medium text-sm"
               />
             </div>
           </div>
 
           {/* Category Selector */}
           <div>
-            <label className="block text-xs font-bold text-stone-700 uppercase tracking-wider mb-2">
+            <label className="block text-xs font-bold text-stone-700 dark:text-stone-300 uppercase tracking-wider mb-2">
               Categoría
             </label>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
@@ -203,8 +200,8 @@ export const MemoryFormModal: React.FC<MemoryFormModalProps> = ({
                     onClick={() => setCategory(cat.key)}
                     className={`flex items-center gap-2 p-2 rounded-xl text-xs font-semibold border transition-all text-left cursor-pointer ${
                       isSelected
-                        ? `${cat.badgeBg} border-rose-400 shadow-xs ring-1 ring-rose-300`
-                        : 'bg-stone-50 border-stone-200 text-stone-600 hover:bg-stone-100'
+                        ? `${cat.badgeBg} ${cat.darkBadgeBg} border-rose-400 dark:border-rose-600 shadow-xs ring-1 ring-rose-300 dark:ring-rose-800`
+                        : 'bg-stone-50 dark:bg-stone-900/60 border-stone-200 dark:border-stone-800 text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800'
                     }`}
                   >
                     <span className="text-base">{cat.emoji}</span>
@@ -217,7 +214,7 @@ export const MemoryFormModal: React.FC<MemoryFormModalProps> = ({
 
           {/* Feeling / Mood */}
           <div>
-            <label className="block text-xs font-bold text-stone-700 uppercase tracking-wider mb-2">
+            <label className="block text-xs font-bold text-stone-700 dark:text-stone-300 uppercase tracking-wider mb-2">
               ¿Cómo se sintió ese día?
             </label>
             <div className="flex flex-wrap gap-2">
@@ -226,10 +223,10 @@ export const MemoryFormModal: React.FC<MemoryFormModalProps> = ({
                   type="button"
                   key={f.key}
                   onClick={() => setFeeling(f.key)}
-                  className={`px-3 py-1.5 rounded-full text-xs font-medium border flex items-center gap-1.5 transition-all cursor-pointer ${
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium border flex items-center gap-1.5 transition-all cursor-pointer ${
                     feeling === f.key
-                      ? 'bg-rose-50 border-rose-300 text-rose-700 font-bold shadow-xs'
-                      : 'bg-stone-50 border-stone-200 text-stone-600 hover:bg-stone-100'
+                      ? 'bg-rose-50 dark:bg-rose-950/80 border-rose-300 dark:border-rose-800 text-rose-700 dark:text-rose-300 font-bold shadow-xs'
+                      : 'bg-stone-50 dark:bg-stone-900/60 border-stone-200 dark:border-stone-800 text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800'
                   }`}
                 >
                   <span>{f.emoji}</span>
@@ -241,7 +238,7 @@ export const MemoryFormModal: React.FC<MemoryFormModalProps> = ({
 
           {/* Location */}
           <div>
-            <label className="block text-xs font-bold text-stone-700 uppercase tracking-wider mb-1.5 flex items-center gap-1">
+            <label className="block text-xs font-bold text-stone-700 dark:text-stone-300 uppercase tracking-wider mb-1.5 flex items-center gap-1">
               <MapPin className="w-3.5 h-3.5 text-rose-500" />
               Lugar / Ubicación
             </label>
@@ -249,14 +246,14 @@ export const MemoryFormModal: React.FC<MemoryFormModalProps> = ({
               type="text"
               value={location}
               onChange={e => setLocation(e.target.value)}
-              placeholder="Ej. Café La Estación, Parque Central, Granada..."
-              className="w-full px-4 py-2.5 rounded-xl border border-stone-200 focus:outline-none focus:ring-2 focus:ring-rose-400 font-medium text-stone-900 text-sm placeholder:text-stone-400"
+              placeholder="Ej. Café La Estación, Mirador, Restaurante..."
+              className="w-full px-3.5 py-2.5 rounded-xl border border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-stone-900 text-stone-900 dark:text-stone-100 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-rose-400 font-medium text-sm"
             />
           </div>
 
           {/* Description / Story */}
           <div>
-            <label className="block text-xs font-bold text-stone-700 uppercase tracking-wider mb-1.5">
+            <label className="block text-xs font-bold text-stone-700 dark:text-stone-300 uppercase tracking-wider mb-1.5">
               Pequeña historia: ¿Qué pasó ese día?
             </label>
             <textarea
@@ -264,13 +261,13 @@ export const MemoryFormModal: React.FC<MemoryFormModalProps> = ({
               value={description}
               onChange={e => setDescription(e.target.value)}
               placeholder="Cuéntanos un detalle bonito, lo que comieron, lo que te hizo reír, las palabras que dijeron..."
-              className="w-full px-4 py-2.5 rounded-xl border border-stone-200 focus:outline-none focus:ring-2 focus:ring-rose-400 font-sans text-stone-800 text-sm placeholder:text-stone-400 resize-none"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-stone-900 text-stone-900 dark:text-stone-100 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-rose-400 font-sans text-sm resize-none"
             />
           </div>
 
           {/* Photos Upload */}
           <div>
-            <label className="block text-xs font-bold text-stone-700 uppercase tracking-wider mb-2 flex items-center justify-between">
+            <label className="block text-xs font-bold text-stone-700 dark:text-stone-300 uppercase tracking-wider mb-2 flex items-center justify-between">
               <span className="flex items-center gap-1">
                 <ImageIcon className="w-3.5 h-3.5 text-rose-500" />
                 Fotos del recuerdo ({photos.length})
@@ -278,15 +275,14 @@ export const MemoryFormModal: React.FC<MemoryFormModalProps> = ({
               <span className="text-[11px] text-stone-400 font-normal">Puedes subir varias fotos</span>
             </label>
 
-            {/* Photos Grid */}
-            <div className="grid grid-cols-3 sm:grid-cols-4 gap-2.5 mb-2.5">
+            <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 mb-2">
               {photos.map((photo, index) => (
-                <div key={photo.id} className="relative group aspect-square rounded-xl overflow-hidden border border-stone-200 bg-stone-100">
+                <div key={photo.id} className="relative group aspect-square rounded-xl overflow-hidden border border-stone-200 dark:border-stone-700 bg-stone-100 dark:bg-stone-800">
                   <img src={photo.url} alt={`Foto ${index + 1}`} className="w-full h-full object-cover" />
                   <button
                     type="button"
                     onClick={() => handleRemovePhoto(photo.id)}
-                    className="absolute top-1 right-1 p-1 bg-black/60 hover:bg-rose-600 text-white rounded-full transition-colors"
+                    className="absolute top-1 right-1 p-1 bg-black/60 hover:bg-rose-600 text-white rounded-lg transition-colors cursor-pointer"
                   >
                     <Trash2 className="w-3 h-3" />
                   </button>
@@ -295,10 +291,10 @@ export const MemoryFormModal: React.FC<MemoryFormModalProps> = ({
 
               <div
                 onClick={() => fileInputRef.current?.click()}
-                className="aspect-square rounded-xl border-2 border-dashed border-stone-200 hover:border-rose-400 bg-stone-50 hover:bg-rose-50/50 flex flex-col items-center justify-center p-2 text-center cursor-pointer transition-colors"
+                className="aspect-square rounded-xl border-2 border-dashed border-stone-200 dark:border-stone-700 hover:border-rose-400 dark:hover:border-rose-500 bg-stone-50 dark:bg-stone-900 hover:bg-rose-50/50 dark:hover:bg-rose-950/30 flex flex-col items-center justify-center p-2 text-center cursor-pointer transition-colors"
               >
                 <Upload className="w-5 h-5 text-stone-400 group-hover:text-rose-500 mb-1" />
-                <span className="text-[11px] font-semibold text-stone-500">
+                <span className="text-[11px] font-semibold text-stone-500 dark:text-stone-400">
                   {isUploading ? 'Cargando...' : '+ Subir foto'}
                 </span>
               </div>
@@ -315,15 +311,15 @@ export const MemoryFormModal: React.FC<MemoryFormModalProps> = ({
           </div>
 
           {/* Milestone Checkbox */}
-          <div className="p-3.5 bg-amber-50/70 border border-amber-200 rounded-2xl flex items-center justify-between">
+          <div className="p-3.5 bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/60 rounded-xl flex items-center justify-between">
             <div className="flex items-center gap-2.5">
               <Sparkles className="w-5 h-5 text-amber-500 flex-shrink-0" />
               <div>
-                <h4 className="text-xs font-bold text-amber-900">
+                <h4 className="text-xs font-bold text-amber-900 dark:text-amber-200">
                   Marcar como Hito Principal
                 </h4>
-                <p className="text-[11px] text-amber-700">
-                  Aparecerá destacado con corona y en la sección de días juntos
+                <p className="text-[11px] text-amber-700 dark:text-amber-400">
+                  Aparecerá destacado en la sección de hitos y días de amor
                 </p>
               </div>
             </div>
@@ -337,17 +333,17 @@ export const MemoryFormModal: React.FC<MemoryFormModalProps> = ({
           </div>
 
           {/* Action Buttons */}
-          <div className="pt-3 border-t border-stone-100 flex items-center justify-end gap-3">
+          <div className="pt-3 border-t border-stone-100 dark:border-stone-800 flex items-center justify-end gap-3">
             <button
               type="button"
               onClick={onClose}
-              className="px-5 py-2.5 rounded-xl border border-stone-200 text-stone-600 font-semibold text-sm hover:bg-stone-50 transition-colors cursor-pointer"
+              className="px-4 py-2 rounded-xl border border-stone-200 dark:border-stone-700 text-stone-600 dark:text-stone-300 font-semibold text-xs sm:text-sm hover:bg-stone-50 dark:hover:bg-stone-800 transition-colors cursor-pointer"
             >
               Cancelar
             </button>
             <button
               type="submit"
-              className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-rose-500 to-amber-500 hover:from-rose-600 hover:to-amber-600 text-white font-bold text-sm shadow-md shadow-rose-500/25 transition-all transform hover:-translate-y-0.5 cursor-pointer flex items-center gap-2"
+              className="px-5 py-2 rounded-xl bg-gradient-to-r from-rose-500 to-amber-500 hover:from-rose-600 hover:to-amber-600 text-white font-bold text-xs sm:text-sm shadow-md shadow-rose-500/25 transition-all transform hover:-translate-y-0.5 cursor-pointer flex items-center gap-2"
             >
               <Heart className="w-4 h-4 fill-white" />
               <span>Guardar Recuerdo</span>

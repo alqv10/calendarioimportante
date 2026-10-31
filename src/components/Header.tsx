@@ -1,6 +1,6 @@
 import { useRef } from 'react'
-import { Calendar, BookOpen, Sparkles, Plus, Download, Upload, Heart } from 'lucide-react'
-import type { ViewMode, MemoryMoment } from '../types'
+import { Calendar, BookOpen, Sparkles, Plus, Download, Upload, Heart, Sun, Moon, LogOut, User } from 'lucide-react'
+import type { ViewMode, MemoryMoment, UserProfile } from '../types'
 import { exportMemoriesJSON, importMemoriesJSON } from '../services/storage'
 import { triggerJoyfulConfetti } from '../services/confetti'
 
@@ -10,6 +10,12 @@ interface HeaderProps {
   onNewMoment: () => void
   memories: MemoryMoment[]
   onReload: () => void
+  currentUser: UserProfile | null
+  onOpenAuth: () => void
+  onLogout: () => void
+  isDarkMode: boolean
+  onToggleDarkMode: () => void
+  onOpenGraceEasterEgg: () => void
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -17,22 +23,28 @@ export const Header: React.FC<HeaderProps> = ({
   onViewChange,
   onNewMoment,
   memories,
-  onReload
+  onReload,
+  currentUser,
+  onOpenAuth,
+  onLogout,
+  isDarkMode,
+  onToggleDarkMode,
+  onOpenGraceEasterEgg
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const handleExport = async () => {
     try {
-      const dataStr = await exportMemoriesJSON()
+      const dataStr = await exportMemoriesJSON(currentUser?.id)
       const blob = new Blob([dataStr], { type: 'application/json' })
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = `recuerdos-importantes-${new Date().toISOString().split('T')[0]}.json`
+      a.download = `recuerdos-${currentUser?.username || 'importantes'}-${new Date().toISOString().split('T')[0]}.json`
       a.click()
       URL.revokeObjectURL(url)
       triggerJoyfulConfetti()
-    } catch (err) {
+    } catch {
       alert('Error al exportar los recuerdos')
     }
   }
@@ -49,7 +61,7 @@ export const Header: React.FC<HeaderProps> = ({
     reader.onload = async (event) => {
       try {
         const text = event.target?.result as string
-        const count = await importMemoriesJSON(text)
+        const count = await importMemoriesJSON(text, currentUser?.id)
         alert(`¡Se importaron ${count} recuerdos exitosamente! 💖`)
         onReload()
         triggerJoyfulConfetti()
@@ -65,45 +77,53 @@ export const Header: React.FC<HeaderProps> = ({
   const totalMilestones = memories.filter(m => m.isMilestone || m.category === 'aniversario' || m.category === 'cita').length
 
   return (
-    <header className="sticky top-0 z-30 bg-[#fcfaf7]/90 backdrop-blur-md border-b border-stone-200/80 px-4 sm:px-8 py-3.5 transition-all">
-      <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+    <header className="sticky top-0 z-30 bg-white/90 dark:bg-[#16141c]/90 backdrop-blur-md border-b border-stone-200/80 dark:border-stone-800/80 px-4 sm:px-8 py-3 transition-colors">
+      <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-3">
         
-        {/* Brand / Title */}
+        {/* Brand / Logo */}
         <div className="flex items-center gap-3">
-          <div className="relative">
-            <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-rose-500 to-amber-400 flex items-center justify-center text-white shadow-md shadow-rose-500/20 transform transition-transform hover:scale-105">
-              <Heart className="w-6 h-6 fill-white stroke-white animate-pulse" />
+          <div
+            onClick={onOpenGraceEasterEgg}
+            title="Dedicado a Grace 🌹 (Toca para ver sorpresa)"
+            className="group relative cursor-pointer"
+          >
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-rose-500 to-amber-500 flex items-center justify-center text-white shadow-sm shadow-rose-500/20 transform transition-transform group-hover:scale-105">
+              <Heart className="w-5 h-5 fill-white stroke-white animate-pulse" />
             </div>
-            <span className="absolute -top-1 -right-1 flex h-3 w-3">
+            <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-3 w-3 bg-rose-500"></span>
+              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-500"></span>
             </span>
           </div>
 
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-stone-900 font-sans">
+              <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-stone-900 dark:text-white font-sans">
                 Momentos <span className="text-rose-500 font-extrabold">Especiales</span>
               </h1>
-              <span className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-100 text-rose-700">
+              <span className="hidden sm:inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg text-xs font-semibold bg-rose-50 dark:bg-rose-950/50 text-rose-700 dark:text-rose-300 border border-rose-200/60 dark:border-rose-900/50">
                 <span>✨ {memories.length} recuerdos</span>
-                {totalPhotos > 0 && <span>• 📸 {totalPhotos} fotos</span>}
+                {totalPhotos > 0 && <span>• 📸 {totalPhotos}</span>}
               </span>
             </div>
-            <p className="text-xs text-stone-500 hidden sm:block">
-              El calendario de los días que hicieron historia en nuestros corazones
+            <p className="text-xs text-stone-500 dark:text-stone-400 hidden sm:block">
+              {currentUser?.partnerName ? (
+                <>Nuestra historia de amor junto a <strong className="text-rose-500">{currentUser.partnerName}</strong></>
+              ) : (
+                'El calendario de los días que cambiaron nuestra historia'
+              )}
             </p>
           </div>
         </div>
 
-        {/* View Switcher Navigation */}
-        <div className="flex items-center bg-stone-100/80 p-1 rounded-2xl border border-stone-200/70 shadow-inner">
+        {/* View Switcher Tabs (Less circular, crisp geometric rounded-xl) */}
+        <div className="flex items-center bg-stone-100 dark:bg-stone-900 p-1 rounded-xl border border-stone-200/80 dark:border-stone-800">
           <button
             onClick={() => onViewChange('calendar')}
-            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-semibold transition-all ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all cursor-pointer ${
               currentView === 'calendar'
-                ? 'bg-white text-stone-900 shadow-sm shadow-stone-200'
-                : 'text-stone-600 hover:text-stone-900 hover:bg-white/50'
+                ? 'bg-white dark:bg-stone-800 text-stone-900 dark:text-white shadow-xs'
+                : 'text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-white'
             }`}
           >
             <Calendar className="w-4 h-4 text-rose-500" />
@@ -112,10 +132,10 @@ export const Header: React.FC<HeaderProps> = ({
 
           <button
             onClick={() => onViewChange('timeline')}
-            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-semibold transition-all ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all cursor-pointer ${
               currentView === 'timeline'
-                ? 'bg-white text-stone-900 shadow-sm shadow-stone-200'
-                : 'text-stone-600 hover:text-stone-900 hover:bg-white/50'
+                ? 'bg-white dark:bg-stone-800 text-stone-900 dark:text-white shadow-xs'
+                : 'text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-white'
             }`}
           >
             <BookOpen className="w-4 h-4 text-amber-500" />
@@ -124,24 +144,49 @@ export const Header: React.FC<HeaderProps> = ({
 
           <button
             onClick={() => onViewChange('milestones')}
-            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-semibold transition-all ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all cursor-pointer ${
               currentView === 'milestones'
-                ? 'bg-white text-stone-900 shadow-sm shadow-stone-200'
-                : 'text-stone-600 hover:text-stone-900 hover:bg-white/50'
+                ? 'bg-white dark:bg-stone-800 text-stone-900 dark:text-white shadow-xs'
+                : 'text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-white'
             }`}
           >
             <Sparkles className="w-4 h-4 text-purple-500" />
-            <span>Hitos & Días</span>
+            <span>Hitos</span>
             {totalMilestones > 0 && (
-              <span className="bg-purple-100 text-purple-700 text-[10px] px-1.5 py-0.2 rounded-full font-bold">
+              <span className="bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300 text-[10px] px-1.5 py-0.2 rounded-md font-bold">
                 {totalMilestones}
               </span>
             )}
           </button>
         </div>
 
-        {/* Actions: Add Moment & Backup */}
+        {/* Right Actions: Dark mode, Account, Export/Import, Add Moment */}
         <div className="flex items-center gap-2">
+          
+          {/* Secret Grace Easter Egg Button */}
+          <button
+            onClick={onOpenGraceEasterEgg}
+            title="Dedicado a Grace 🌹"
+            className="flex items-center gap-1 text-xs font-bold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/60 hover:bg-rose-100 dark:hover:bg-rose-900/60 border border-rose-200 dark:border-rose-900/80 px-2.5 py-1.5 rounded-lg transition-all cursor-pointer"
+          >
+            <span>Grace</span>
+            <span>🌹</span>
+          </button>
+
+          {/* Dark Mode Toggle */}
+          <button
+            onClick={onToggleDarkMode}
+            title={isDarkMode ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
+            className="p-2 text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-lg transition-colors border border-transparent hover:border-stone-200 dark:hover:border-stone-700 cursor-pointer"
+          >
+            {isDarkMode ? (
+              <Sun className="w-4 h-4 text-amber-400" />
+            ) : (
+              <Moon className="w-4 h-4 text-stone-600" />
+            )}
+          </button>
+
+          {/* Backups */}
           <input
             type="file"
             ref={fileInputRef}
@@ -152,26 +197,56 @@ export const Header: React.FC<HeaderProps> = ({
 
           <button
             onClick={handleExport}
-            title="Exportar copia de seguridad (JSON con fotos)"
-            className="p-2 text-stone-600 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-colors border border-transparent hover:border-rose-200"
+            title="Exportar copia de seguridad"
+            className="p-2 text-stone-600 dark:text-stone-300 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-lg transition-colors cursor-pointer"
           >
             <Download className="w-4 h-4" />
           </button>
 
           <button
             onClick={handleImportClick}
-            title="Importar recuerdos guardados"
-            className="p-2 text-stone-600 hover:text-amber-600 hover:bg-amber-50 rounded-xl transition-colors border border-transparent hover:border-amber-200"
+            title="Importar recuerdos"
+            className="p-2 text-stone-600 dark:text-stone-300 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-lg transition-colors cursor-pointer"
           >
             <Upload className="w-4 h-4" />
           </button>
 
+          {/* User Account / Profile */}
+          {currentUser ? (
+            <div className="flex items-center gap-1 pl-1 border-l border-stone-200 dark:border-stone-800">
+              <button
+                onClick={onOpenAuth}
+                title={`Cuenta: ${currentUser.name} (@${currentUser.username}) - Clic para cambiar`}
+                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-stone-800 hover:border-rose-400 text-xs font-bold text-stone-800 dark:text-stone-100 transition-colors cursor-pointer"
+              >
+                <span>{currentUser.avatarEmoji || '💖'}</span>
+                <span className="hidden lg:inline">{currentUser.name}</span>
+              </button>
+              <button
+                onClick={onLogout}
+                title="Cerrar sesión"
+                className="p-2 text-stone-400 hover:text-rose-500 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors cursor-pointer"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={onOpenAuth}
+              className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-stone-800 text-xs font-bold text-stone-700 dark:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-700 transition-colors cursor-pointer"
+            >
+              <User className="w-3.5 h-3.5 text-rose-500" />
+              <span>Cuenta</span>
+            </button>
+          )}
+
+          {/* New Moment Button */}
           <button
             onClick={onNewMoment}
-            className="flex items-center gap-2 bg-gradient-to-r from-rose-500 via-rose-600 to-amber-500 hover:from-rose-600 hover:to-amber-600 text-white font-medium text-xs sm:text-sm px-4 py-2 rounded-xl shadow-md shadow-rose-500/25 transform transition hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
+            className="flex items-center gap-1.5 bg-gradient-to-r from-rose-500 to-amber-500 hover:from-rose-600 hover:to-amber-600 text-white font-semibold text-xs sm:text-sm px-3.5 py-2 rounded-xl shadow-sm transition-all transform hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
           >
-            <Plus className="w-4 h-4 stroke-[3]" />
-            <span className="font-semibold">Nuevo Recuerdo</span>
+            <Plus className="w-4 h-4 stroke-[2.5]" />
+            <span className="hidden sm:inline">Nuevo Recuerdo</span>
           </button>
         </div>
 

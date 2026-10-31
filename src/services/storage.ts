@@ -89,7 +89,7 @@ export const INITIAL_MEMORIES: MemoryMoment[] = [
   }
 ]
 
-export async function getAllMemories(): Promise<MemoryMoment[]> {
+export async function getAllMemories(userId?: string): Promise<MemoryMoment[]> {
   try {
     const db = await openDB()
     return new Promise((resolve) => {
@@ -100,25 +100,29 @@ export async function getAllMemories(): Promise<MemoryMoment[]> {
       request.onsuccess = () => {
         let results = request.result as MemoryMoment[]
         if (!results || results.length === 0) {
-          // Check if initialized before
           const initialized = localStorage.getItem('momentos_initialized')
           if (!initialized) {
-            // Seed with sample moments
-            seedInitialMemories().then(seeded => resolve(seeded))
+            seedInitialMemories(userId).then(seeded => resolve(seeded))
             return
           }
           resolve([])
         } else {
-          // Sort descending by date
+          // If userId provided, filter by userId or include unassigned legacy ones
+          if (userId) {
+            results = results.filter(m => !m.userId || m.userId === userId)
+          }
           results.sort((a, b) => b.date.localeCompare(a.date))
           resolve(results)
         }
       }
 
       request.onerror = () => {
-        // Fallback to localStorage
         const stored = localStorage.getItem(LOCAL_STORAGE_BACKUP_KEY)
-        resolve(stored ? JSON.parse(stored) : INITIAL_MEMORIES)
+        let list: MemoryMoment[] = stored ? JSON.parse(stored) : INITIAL_MEMORIES
+        if (userId) {
+          list = list.filter(m => !m.userId || m.userId === userId)
+        }
+        resolve(list)
       }
     })
   } catch (err) {
@@ -128,32 +132,42 @@ export async function getAllMemories(): Promise<MemoryMoment[]> {
       localStorage.setItem(LOCAL_STORAGE_BACKUP_KEY, JSON.stringify(INITIAL_MEMORIES))
       return INITIAL_MEMORIES
     }
-    return JSON.parse(stored)
+    let list: MemoryMoment[] = JSON.parse(stored)
+    if (userId) {
+      list = list.filter(m => !m.userId || m.userId === userId)
+    }
+    return list
   }
 }
 
-export async function seedInitialMemories(): Promise<MemoryMoment[]> {
+export async function seedInitialMemories(userId?: string): Promise<MemoryMoment[]> {
+  const seeded = INITIAL_MEMORIES.map(m => ({ ...m, userId }))
   try {
     const db = await openDB()
     const transaction = db.transaction(STORE_NAME, 'readwrite')
     const store = transaction.objectStore(STORE_NAME)
-    for (const item of INITIAL_MEMORIES) {
+    for (const item of seeded) {
       store.put(item)
     }
     localStorage.setItem('momentos_initialized', 'true')
-  } catch (e) {
-    localStorage.setItem(LOCAL_STORAGE_BACKUP_KEY, JSON.stringify(INITIAL_MEMORIES))
+  } catch {
+    localStorage.setItem(LOCAL_STORAGE_BACKUP_KEY, JSON.stringify(seeded))
   }
-  return INITIAL_MEMORIES
+  return seeded
 }
 
-export async function saveMemory(moment: MemoryMoment): Promise<void> {
+export async function saveMemory(moment: MemoryMoment, userId?: string): Promise<void> {
+  const itemToSave: MemoryMoment = {
+    ...moment,
+    userId: moment.userId || userId
+  }
+
   try {
     const db = await openDB()
     return new Promise((resolve, reject) => {
       const transaction = db.transaction(STORE_NAME, 'readwrite')
       const store = transaction.objectStore(STORE_NAME)
-      const request = store.put(moment)
+      const request = store.put(itemToSave)
 
       request.onsuccess = () => {
         localStorage.setItem('momentos_initialized', 'true')
@@ -161,13 +175,13 @@ export async function saveMemory(moment: MemoryMoment): Promise<void> {
       }
       request.onerror = () => reject(request.error)
     })
-  } catch (e) {
+  } catch {
     const list = await getAllMemories()
-    const index = list.findIndex(m => m.id === moment.id)
+    const index = list.findIndex(m => m.id === itemToSave.id)
     if (index >= 0) {
-      list[index] = moment
+      list[index] = itemToSave
     } else {
-      list.unshift(moment)
+      list.unshift(itemToSave)
     }
     localStorage.setItem(LOCAL_STORAGE_BACKUP_KEY, JSON.stringify(list))
   }
@@ -183,24 +197,25 @@ export async function deleteMemory(id: string): Promise<void> {
       request.onsuccess = () => resolve()
       request.onerror = () => reject(request.error)
     })
-  } catch (e) {
+  } catch {
     const list = await getAllMemories()
     const filtered = list.filter(m => m.id !== id)
     localStorage.setItem(LOCAL_STORAGE_BACKUP_KEY, JSON.stringify(filtered))
   }
 }
 
-export async function exportMemoriesJSON(): Promise<string> {
-  const memories = await getAllMemories()
+export async function exportMemoriesJSON(userId?: string): Promise<string> {
+  const memories = await getAllMemories(userId)
   return JSON.stringify({
-    version: '1.0',
+    version: '2.0',
     exportDate: new Date().toISOString(),
+    userId,
     total: memories.length,
     memories
   }, null, 2)
 }
 
-export async function importMemoriesJSON(jsonString: string): Promise<number> {
+export async function importMemoriesJSON(jsonString: string, userId?: string): Promise<number> {
   try {
     const parsed = JSON.parse(jsonString)
     const items: MemoryMoment[] = Array.isArray(parsed) ? parsed : (parsed.memories || [])
@@ -208,11 +223,11 @@ export async function importMemoriesJSON(jsonString: string): Promise<number> {
 
     for (const item of items) {
       if (item.id && item.title && item.date) {
-        await saveMemory(item)
+        await saveMemory({ ...item, userId: userId || item.userId }, userId)
       }
     }
     return items.length
-  } catch (err) {
+  } catch {
     throw new Error('El archivo no tiene un formato válido de recuerdos.')
   }
 }
