@@ -22,7 +22,7 @@ Actualizado: 2026-10-31
 ## Estado actual de Git y publicación
 
 - Repositorio y remoto actuales: `alqv10/calendarioimportante`, rama `master`.
-- La autenticación segura se publicó en el commit `53c73fd` de `origin/master`.
+- La autenticación segura se publicó en `53c73fd`; los avatares ampliados y el emparejamiento de calendarios se publicaron en `7d96a04`, ambos en `origin/master`.
 - Producción: https://calendarioimportante.vercel.app. Se comprobó que el sitio y `supabase-schema.sql` responden sin inicio de sesión.
 - El proyecto Vercel existe, pero no quedó conectado a GitHub: Vercel requiere configurar una conexión de inicio de sesión de GitHub. Los cambios futuros no se desplegarán automáticamente hasta completar esa conexión.
 - No se ha configurado ni probado un proyecto Supabase; las cuentas cloud no están activas. La URL y la clave pública se guardan por navegador y cada persona debe configurarlas manualmente por ahora.
