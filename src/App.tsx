@@ -13,15 +13,13 @@ import { CalendarPairingModal } from './components/CalendarPairingModal'
 import { BottomNav } from './components/BottomNav'
 import type { MemoryMoment, ViewMode, UserProfile } from './types'
 import { getAllMemories, saveMemory, deleteMemory } from './services/storage'
-import { getCurrentUser, logoutUser, restoreCurrentUser } from './services/auth'
+import { logoutUser, restoreCurrentUser } from './services/auth'
 import { isCloudDatabaseConnected } from './services/supabase'
 import { Heart, Sparkles, Flower2 } from 'lucide-react'
 
 export function App() {
-  const [currentUser, setCurrentUser] = useState<UserProfile | null>(() =>
-    isCloudDatabaseConnected() ? null : getCurrentUser()
-  )
-  const [authReady, setAuthReady] = useState(() => !isCloudDatabaseConnected())
+  const [currentUser, setCurrentUser] = useState<UserProfile | null>(null)
+  const [authReady, setAuthReady] = useState(false)
   const [authError, setAuthError] = useState('')
   const [memories, setMemories] = useState<MemoryMoment[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -55,7 +53,7 @@ export function App() {
         if (!active) return
         setCurrentUser(user)
         setAuthReady(true)
-        if (isCloudDatabaseConnected() && !user) setIsAuthOpen(true)
+        if (!user) setIsAuthOpen(true)
       })
       .catch((error: unknown) => {
         if (!active) return
@@ -83,7 +81,7 @@ export function App() {
   // Load memories for current user
   const fetchMemories = useCallback(async () => {
     if (!authReady) return
-    if (isCloudDatabaseConnected() && !currentUser) {
+    if (!currentUser) {
       setMemories([])
       setIsLoading(false)
       return
@@ -129,13 +127,10 @@ export function App() {
   }, [])
 
   const handleSaveMemory = async (moment: MemoryMoment) => {
-    if (
-      isCloudDatabaseConnected() &&
-      (!currentUser || (moment.userId && moment.userId !== currentUser.id))
-    ) {
+    if (!currentUser || (moment.userId && moment.userId !== currentUser.id)) {
       throw new Error('Solo puedes guardar recuerdos en tu propia cuenta.')
     }
-    await saveMemory(moment, currentUser?.id)
+    await saveMemory(moment, currentUser.id)
     await fetchMemories()
     if (selectedMoment?.id === moment.id) {
       setSelectedMoment(moment)
@@ -143,13 +138,11 @@ export function App() {
   }
 
   const handleDeleteMemory = async (id: string) => {
-    if (isCloudDatabaseConnected()) {
-      const memory = memories.find(moment => moment.id === id)
-      if (!currentUser || !memory || memory.userId !== currentUser.id) {
-        throw new Error('Solo puedes borrar recuerdos de tu propia cuenta.')
-      }
+    const memory = memories.find(moment => moment.id === id)
+    if (!currentUser || !memory || memory.userId !== currentUser.id) {
+      throw new Error('Solo puedes borrar recuerdos de tu propia cuenta.')
     }
-    await deleteMemory(id)
+    await deleteMemory(id, currentUser.id)
     await fetchMemories()
   }
 
@@ -173,7 +166,11 @@ export function App() {
       await logoutUser()
       setCurrentUser(null)
       setMemories([])
-      if (isCloudDatabaseConnected()) setIsAuthOpen(true)
+      setSelectedMoment(null)
+      setDayModalDate(null)
+      setEditingMoment(null)
+      setIsLoading(true)
+      setIsAuthOpen(true)
     } catch (error) {
       setAuthError(error instanceof Error ? error.message : 'No se pudo cerrar la sesión.')
     }
@@ -181,6 +178,11 @@ export function App() {
 
   const handleAuthSuccess = (user: UserProfile) => {
     setAuthError('')
+    setMemories([])
+    setSelectedMoment(null)
+    setDayModalDate(null)
+    setEditingMoment(null)
+    setIsLoading(true)
     setCurrentUser(user)
   }
 
@@ -189,10 +191,16 @@ export function App() {
     setIsCloudConnected(cloudConnected)
     setCurrentUser(null)
     setMemories([])
+    setSelectedMoment(null)
+    setDayModalDate(null)
+    setEditingMoment(null)
     setLoadError('')
     setAuthError('')
     setAuthReady(!cloudConnected)
-    if (!cloudConnected) return
+    if (!cloudConnected) {
+      setIsAuthOpen(true)
+      return
+    }
 
     restoreCurrentUser()
       .then(user => {
@@ -214,7 +222,7 @@ export function App() {
     <div className="min-h-screen flex flex-col bg-[#faf7f4] dark:bg-[#121118] text-stone-800 dark:text-stone-100 transition-colors pb-16 md:pb-0">
       
       {/* Top navigation bar */}
-      <Header
+      {authReady && currentUser && <Header
         currentView={currentView}
         onViewChange={setCurrentView}
         onNewMoment={() => handleOpenNewForm()}
@@ -232,7 +240,7 @@ export function App() {
           setIsCalendarPairingOpen(true)
         }}
         isCloudConnected={isCloudConnected}
-      />
+      />}
 
       {/* Main Content Area */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-8 py-5 sm:py-8">
@@ -246,12 +254,18 @@ export function App() {
             {loadError}
           </div>
         )}
-        {isLoading || !authReady ? (
+        {!authReady || isLoading ? (
           <div className="flex flex-col items-center justify-center min-h-[50vh]">
             <div className="w-10 h-10 rounded-lg border-4 border-rose-300 border-t-rose-600 animate-spin mb-4" />
             <p className="text-stone-500 dark:text-stone-400 font-semibold text-sm">
-              Cargando momentos felices... ✨
+              Verificando tu sesión... ✨
             </p>
+          </div>
+        ) : !currentUser ? (
+          <div className="flex min-h-[50vh] flex-col items-center justify-center text-center">
+            <Heart className="mb-3 h-10 w-10 fill-rose-500 text-rose-500" />
+            <h1 className="text-xl font-bold text-stone-900 dark:text-white">Inicia sesión para ver tus recuerdos</h1>
+            <p className="mt-2 text-sm text-stone-500 dark:text-stone-400">Tus recuerdos solo aparecen después de entrar a tu cuenta.</p>
           </div>
         ) : (
           <>
@@ -306,17 +320,19 @@ export function App() {
       </footer>
 
       {/* Mobile Bottom Navigation */}
-      <BottomNav
-        currentView={currentView}
-        onViewChange={setCurrentView}
-        onNewMoment={() => handleOpenNewForm()}
-        isDarkMode={isDarkMode}
-        onToggleDarkMode={toggleDarkMode}
-      />
+      {currentUser && (
+        <BottomNav
+          currentView={currentView}
+          onViewChange={setCurrentView}
+          onNewMoment={() => handleOpenNewForm()}
+          isDarkMode={isDarkMode}
+          onToggleDarkMode={toggleDarkMode}
+        />
+      )}
 
       {/* Modals */}
       <MemoryFormModal
-        isOpen={isFormOpen}
+        isOpen={!!currentUser && isFormOpen}
         onClose={() => setIsFormOpen(false)}
         onSave={handleSaveMemory}
         initialDate={formInitialDate}
@@ -324,7 +340,7 @@ export function App() {
       />
 
       <MemoryDetailModal
-        moment={selectedMoment}
+        moment={currentUser ? selectedMoment : null}
         onClose={() => setSelectedMoment(null)}
         onEdit={handleStartEdit}
         onDelete={handleDeleteMemory}
@@ -335,7 +351,7 @@ export function App() {
       />
 
       <DayMomentsModal
-        isOpen={!!dayModalDate}
+        isOpen={!!currentUser && !!dayModalDate}
         onClose={() => setDayModalDate(null)}
         dateStr={dayModalDate || ''}
         moments={dayMoments}
@@ -345,14 +361,16 @@ export function App() {
       />
 
       <AuthModal
-        isOpen={isAuthOpen}
+        isOpen={authReady && (isAuthOpen || !currentUser)}
+        canClose={!!currentUser}
         onClose={() => setIsAuthOpen(false)}
         onSuccess={handleAuthSuccess}
+        onOpenCloudConfig={() => setIsCloudConfigOpen(true)}
       />
 
       <CalendarPairingModal
         key={calendarPairingModalInstance}
-        isOpen={isCalendarPairingOpen}
+        isOpen={!!currentUser && isCalendarPairingOpen}
         currentUser={currentUser}
         onClose={() => setIsCalendarPairingOpen(false)}
         onPairingChanged={() => { void fetchMemories() }}

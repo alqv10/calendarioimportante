@@ -1,55 +1,10 @@
 import type { UserProfile } from '../types'
 import { getSupabaseClient } from './supabase'
 
-const USERS_STORAGE_KEY = 'momentos_app_users'
 const CURRENT_USER_KEY = 'momentos_app_current_user'
 
-function withoutStoredPassword(user: UserProfile): UserProfile {
-  const legacyUser = user as UserProfile & { password?: string }
-  const { password: _password, ...profile } = legacyUser
-  return profile
-}
-
-export function getAllUsersLocal(): UserProfile[] {
-  try {
-    const raw = localStorage.getItem(USERS_STORAGE_KEY)
-    if (!raw) return []
-
-    const storedUsers = JSON.parse(raw) as UserProfile[]
-    const users = storedUsers.map(withoutStoredPassword)
-    if (JSON.stringify(storedUsers) !== JSON.stringify(users)) {
-      localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(users))
-    }
-    return users
-  } catch {
-    return []
-  }
-}
-
-export function getCurrentUser(): UserProfile | null {
-  try {
-    const raw = localStorage.getItem(CURRENT_USER_KEY)
-    if (!raw) return null
-    const user = withoutStoredPassword(JSON.parse(raw) as UserProfile)
-    if (!getAllUsersLocal().some(localUser => localUser.id === user.id)) {
-      localStorage.removeItem(CURRENT_USER_KEY)
-      return null
-    }
-    if (JSON.stringify(JSON.parse(raw)) !== JSON.stringify(user)) {
-      localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(user))
-    }
-    return user
-  } catch {
-    return null
-  }
-}
-
-export function setCurrentUser(user: UserProfile | null): void {
-  if (!user) {
-    localStorage.removeItem(CURRENT_USER_KEY)
-  } else {
-    localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(withoutStoredPassword(user)))
-  }
+function clearStoredUser(): void {
+  localStorage.removeItem(CURRENT_USER_KEY)
 }
 
 async function getCloudProfile(userId: string): Promise<UserProfile> {
@@ -73,25 +28,27 @@ async function getCloudProfile(userId: string): Promise<UserProfile> {
     avatarEmoji: data.avatar_emoji || '💖',
     createdAt: data.created_at
   }
-  setCurrentUser(profile)
   return profile
 }
 
 export async function restoreCurrentUser(): Promise<UserProfile | null> {
+  clearStoredUser()
   const supabase = getSupabaseClient()
-  if (!supabase) return getCurrentUser()
+  if (!supabase) {
+    return null
+  }
 
   const { data, error } = await supabase.auth.getSession()
   if (error) throw new Error(`No se pudo restaurar la sesión: ${error.message}`)
   if (!data.session) {
-    setCurrentUser(null)
+    clearStoredUser()
     return null
   }
 
   const { data: userData, error: userError } = await supabase.auth.getUser()
   if (userError) throw new Error(`No se pudo validar la sesión: ${userError.message}`)
   if (!userData.user) {
-    setCurrentUser(null)
+    clearStoredUser()
     return null
   }
   return getCloudProfile(userData.user.id)
@@ -108,53 +65,36 @@ export async function registerUser(
   const cleanUsername = username.trim().toLowerCase()
   const supabase = getSupabaseClient()
 
-  if (supabase) {
-    if (!email?.trim() || !password) {
-      throw new Error('Ingresa un correo y una contraseña para crear una cuenta en la nube.')
-    }
+  if (!supabase) {
+    throw new Error('Configura Supabase para crear una cuenta protegida.')
+  }
+  if (!email?.trim() || !password) {
+    throw new Error('Ingresa un correo y una contraseña para crear una cuenta en la nube.')
+  }
 
-    const { data, error } = await supabase.auth.signUp({
-      email: email.trim().toLowerCase(),
-      password,
-      options: {
-        data: {
-          name: name.trim(),
-          username: cleanUsername,
-          partner_name: partnerName?.trim() || '',
-          avatar_emoji: avatarEmoji || '💖'
-        }
-      }
-    })
-
-    if (error) throw new Error(error.message)
-    if (!data.user) throw new Error('Supabase no devolvió la cuenta creada.')
-    if (!data.session) {
-      return {
-        user: null,
-        message: 'Revisa tu correo y confirma la cuenta antes de iniciar sesión.'
+  const { data, error } = await supabase.auth.signUp({
+    email: email.trim().toLowerCase(),
+    password,
+    options: {
+      data: {
+        name: name.trim(),
+        username: cleanUsername,
+        partner_name: partnerName?.trim() || '',
+        avatar_emoji: avatarEmoji || '💖'
       }
     }
+  })
 
-    return { user: await getCloudProfile(data.user.id) }
+  if (error) throw new Error(error.message)
+  if (!data.user) throw new Error('Supabase no devolvió la cuenta creada.')
+  if (!data.session) {
+    return {
+      user: null,
+      message: 'Revisa tu correo y confirma la cuenta antes de iniciar sesión.'
+    }
   }
 
-  const localUsers = getAllUsersLocal()
-  if (localUsers.some(user => user.username === cleanUsername)) {
-    throw new Error('Ese nombre de usuario ya está registrado en este equipo.')
-  }
-
-  const newUser: UserProfile = {
-    id: `user-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
-    name: name.trim(),
-    username: cleanUsername,
-    partnerName: partnerName?.trim() || '',
-    avatarEmoji: avatarEmoji || '💖',
-    createdAt: Date.now()
-  }
-  localUsers.push(newUser)
-  localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(localUsers))
-  setCurrentUser(newUser)
-  return { user: newUser }
+  return { user: await getCloudProfile(data.user.id) }
 }
 
 export async function loginUser(
@@ -163,26 +103,16 @@ export async function loginUser(
 ): Promise<UserProfile> {
   const supabase = getSupabaseClient()
 
-  if (supabase) {
-    if (!password) throw new Error('Ingresa tu contraseña.')
+  if (!supabase) throw new Error('Configura Supabase para iniciar sesión.')
+  if (!password) throw new Error('Ingresa tu contraseña.')
 
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email: usernameOrEmail.trim().toLowerCase(),
-      password
-    })
-    if (error) throw new Error(error.message)
-    if (!data.user) throw new Error('Supabase no devolvió la cuenta iniciada.')
-    return getCloudProfile(data.user.id)
-  }
-
-  const cleanUsername = usernameOrEmail.trim().toLowerCase()
-  const localUser = getAllUsersLocal().find(user => user.username === cleanUsername)
-  if (!localUser) {
-    throw new Error('Usuario local no encontrado. ¿Deseas crear un perfil en este equipo?')
-  }
-
-  setCurrentUser(localUser)
-  return localUser
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email: usernameOrEmail.trim().toLowerCase(),
+    password
+  })
+  if (error) throw new Error(error.message)
+  if (!data.user) throw new Error('Supabase no devolvió la cuenta iniciada.')
+  return getCloudProfile(data.user.id)
 }
 
 export async function logoutUser(): Promise<void> {
@@ -191,5 +121,5 @@ export async function logoutUser(): Promise<void> {
     const { error } = await supabase.auth.signOut()
     if (error) throw new Error(`No se pudo cerrar la sesión: ${error.message}`)
   }
-  setCurrentUser(null)
+  clearStoredUser()
 }
