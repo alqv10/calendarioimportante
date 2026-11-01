@@ -31,11 +31,11 @@ bun run lint
 
 ## Supabase
 
-El proyecto no incluye credenciales compartidas ni un backend ya desplegado. Antes existían perfiles y recuerdos locales en el navegador; esos perfiles **no son cuentas protegidas, no se sincronizan y no sirven para cambiar de dispositivo**.
+La producción usa un proyecto Supabase gratuito con credenciales compartidas desde Vercel. Antes existían perfiles y recuerdos locales en el navegador; esos perfiles **no son cuentas protegidas, no se sincronizan y no sirven para cambiar de dispositivo**.
 
 La aplicación ahora exige una sesión cloud antes de mostrar recuerdos. Sin Supabase, solo aparece la pantalla de configuración: no permite entrar con perfiles locales, porque no pueden verificar una cuenta única ni proteger el acceso. Los recuerdos locales antiguos y los que no tengan propietario asignado se mantienen ocultos; no se atribuyen automáticamente a ninguna cuenta.
 
-Para habilitar cuentas compartidas:
+Para configurar otro despliegue:
 
 1. Crea un proyecto Supabase nuevo.
 2. Ejecuta `public/supabase-schema.sql` en el SQL Editor. El esquema configura Supabase Auth, crea el perfil al registrarse y limita los perfiles y recuerdos autenticados mediante RLS.
@@ -45,7 +45,7 @@ Para habilitar cuentas compartidas:
 
 Con el esquema actualizado, cada cuenta puede crear un código de invitación de un solo uso, válido por 48 horas. La otra cuenta debe aceptarlo. De forma predeterminada cada persona solo puede consultar, editar y borrar sus propios recuerdos. Solo las dos cuentas emparejadas explícitamente pueden ver los recuerdos, fotos y audios de la otra; cada una conserva edición y borrado únicamente de los propios. Cualquiera puede desvincularlas y revocar el acceso. Ambas cuentas deben usar el mismo proyecto Supabase.
 
-Para que el inicio de sesión funcione igual en todos los teléfonos, configura `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY` en el entorno de despliegue (por ejemplo, las variables de entorno de Vercel) y vuelve a desplegar. Son la URL del proyecto y su clave pública; nunca uses la `service_role` key. También se admite configuración manual por navegador para desarrollo local.
+En producción, `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` y las URL de autenticación ya están configuradas para `https://calendarioimportante.vercel.app`. Para otros despliegues, configura esas variables en el entorno de compilación y añade su dominio a las URL permitidas de Supabase. Son la URL del proyecto y su clave pública; nunca uses la `service_role` key. También se admite configuración manual por navegador para desarrollo local.
 
 **No ejecutes el esquema sobre la base de datos del prototipo anterior.** Esa versión guardaba contraseñas en `profiles` y usaba políticas públicas. El esquema nuevo detecta sus tablas incompatibles y aborta; no migra los datos antiguos. Respalda y migra cualquier dato existente por separado. Nunca pongas una `service_role` key en la aplicación.
 
@@ -57,9 +57,9 @@ La aplicación es una PWA adaptable, no una app nativa de App Store o Google Pla
 
 ## Despliegue
 
-El sitio está publicado en [calendarioimportante.vercel.app](https://calendarioimportante.vercel.app); también se comprobó que la página y `supabase-schema.sql` son accesibles. Aún no se ha conectado un proyecto Supabase, así que las cuentas compartidas no están habilitadas. Los cambios locales que exigen autenticación todavía no están publicados y, antes de desplegarlos, hay que configurar Supabase para que los usuarios puedan crear cuentas.
+El sitio está publicado en [calendarioimportante.vercel.app](https://calendarioimportante.vercel.app). La versión de producción exige iniciar sesión o crear una cuenta y no muestra recuerdos sin sesión. El esquema seguro ya se aplicó al proyecto Supabase gratuito; Vercel tiene las variables de producción y Supabase usa el dominio publicado como URL de autenticación. Aún falta probar el registro, la confirmación por correo y el emparejamiento con dos cuentas reales antes de guardar recuerdos importantes.
 
-El proyecto de Vercel todavía no está conectado a GitHub para despliegues automáticos. La conexión falló porque la cuenta de Vercel necesita una conexión de inicio de sesión de GitHub; se puede completar desde Vercel o desplegar manualmente con `vercel deploy --prod`. Configura las URL de autenticación de Supabase con el dominio final.
+El proyecto de Vercel todavía no está conectado a GitHub para despliegues automáticos; por ahora, los cambios se publican manualmente con `vercel deploy --prod`.
 
 GitHub Pages ya no está configurado. No borres otro repositorio ni cambies de proveedor hasta verificar la publicación y la transferencia del historial.
 
