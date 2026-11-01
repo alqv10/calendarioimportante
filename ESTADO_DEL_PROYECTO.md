@@ -22,9 +22,10 @@ Actualizado: 2026-10-31
 ## Estado actual de Git y publicación
 
 - Repositorio y remoto actuales: `alqv10/calendarioimportante`, rama `master`.
-- La rama `master` está sincronizada con `origin/master`.
-- Vercel y Netlify tienen archivos de configuración, pero no hay una URL de producción ni un despliegue verificado en este estado.
-- No se lanzó un despliegue: este checkout no está vinculado a un proyecto de Vercel y no se ha probado un proyecto Supabase nuevo.
+- La autenticación segura se publicó en el commit `53c73fd` de `origin/master`.
+- Producción: https://calendarioimportante.vercel.app. Se comprobó que el sitio y `supabase-schema.sql` responden sin inicio de sesión.
+- El proyecto Vercel existe, pero no quedó conectado a GitHub: Vercel requiere configurar una conexión de inicio de sesión de GitHub. Los cambios futuros no se desplegarán automáticamente hasta completar esa conexión.
+- No se ha configurado ni probado un proyecto Supabase; las cuentas cloud no están activas. La URL y la clave pública se guardan por navegador y cada persona debe configurarlas manualmente por ahora.
 - El README describe el repositorio y las instrucciones actuales; GitHub Pages ya no está configurado.
 - No borrar el repositorio anterior de GitHub hasta comprobar que el nuevo remoto conserva el historial y todos los cambios que se quieren mantener.
 
@@ -45,8 +46,8 @@ Antes de aceptar usuarios reales:
 
 ### Publicación
 
-- Elegir Vercel o Netlify, vincular el repositorio `alqv10/calendarioimportante` y verificar una compilación y URL de producción.
-- Configurar Supabase y las URL de autenticación para el dominio final.
+- Conectar GitHub a Vercel para habilitar despliegues automáticos, o seguir desplegando manualmente.
+- Configurar Supabase y las URL de autenticación para `https://calendarioimportante.vercel.app`.
 
 ### Compatibilidad con iPhone/iOS
 
