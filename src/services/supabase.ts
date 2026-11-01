@@ -5,12 +5,23 @@ const SUPABASE_ANON_KEY = 'momentos_supabase_anon_key'
 
 // Default public sandbox or user custom connection
 export function getSavedSupabaseConfig(): { url: string; anonKey: string } | null {
+  const envUrl = import.meta.env.VITE_SUPABASE_URL?.trim()
+  const envAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY?.trim()
+  if (envUrl && envAnonKey) return { url: envUrl, anonKey: envAnonKey }
+
   const url = localStorage.getItem(SUPABASE_URL_KEY)
   const anonKey = localStorage.getItem(SUPABASE_ANON_KEY)
   if (url && anonKey) {
     return { url, anonKey }
   }
   return null
+}
+
+export function isSupabaseConfigManaged(): boolean {
+  return !!(
+    import.meta.env.VITE_SUPABASE_URL?.trim() &&
+    import.meta.env.VITE_SUPABASE_ANON_KEY?.trim()
+  )
 }
 
 export function saveSupabaseConfig(url: string, anonKey: string): void {

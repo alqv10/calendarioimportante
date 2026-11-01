@@ -1,6 +1,11 @@
 import { useState, useEffect } from 'react'
 import { X, Database, Check, ExternalLink, Copy, CloudOff } from 'lucide-react'
-import { getSavedSupabaseConfig, saveSupabaseConfig, clearSupabaseConfig } from '../services/supabase'
+import {
+  getSavedSupabaseConfig,
+  isSupabaseConfigManaged,
+  saveSupabaseConfig,
+  clearSupabaseConfig
+} from '../services/supabase'
 
 interface CloudConfigModalProps {
   isOpen: boolean
@@ -18,6 +23,7 @@ export const CloudConfigModal: React.FC<CloudConfigModalProps> = ({
   const [copied, setCopied] = useState(false)
   const [copyError, setCopyError] = useState('')
   const isConnected = !!getSavedSupabaseConfig()
+  const isManaged = isSupabaseConfigManaged()
 
   useEffect(() => {
     const config = getSavedSupabaseConfig()
@@ -45,7 +51,7 @@ export const CloudConfigModal: React.FC<CloudConfigModalProps> = ({
   }
 
   const handleDisconnect = () => {
-    if (window.confirm('¿Desconectar la base de datos en la nube y volver al modo local?')) {
+    if (window.confirm('¿Desconectar la base de datos en la nube? Sin una conexión configurada no podrás iniciar sesión ni acceder a los recuerdos.')) {
       clearSupabaseConfig()
       setUrl('')
       setAnonKey('')
@@ -68,7 +74,13 @@ export const CloudConfigModal: React.FC<CloudConfigModalProps> = ({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 dark:bg-black/80 backdrop-blur-sm overflow-y-auto animate-fade-in">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 dark:bg-black/80 backdrop-blur-sm overflow-y-auto animate-fade-in"
+      style={{
+        paddingTop: 'max(1rem, env(safe-area-inset-top))',
+        paddingBottom: 'max(1rem, env(safe-area-inset-bottom))'
+      }}
+    >
       <div className="relative w-full max-w-lg bg-white dark:bg-[#191720] rounded-2xl border border-stone-200 dark:border-stone-800 shadow-2xl overflow-hidden my-6">
         
         {/* Header */}
@@ -83,7 +95,11 @@ export const CloudConfigModal: React.FC<CloudConfigModalProps> = ({
                   Base de Datos en la Nube
                 </h3>
                 <span className="text-xs text-emerald-100">
-                  {isConnected ? '🟢 Conectado con Supabase (PostgreSQL)' : '🟡 Modo Local (IndexedDB)'}
+                  {isManaged
+                    ? '🟢 Conexión compartida de la aplicación'
+                    : isConnected
+                      ? '🟢 Conectado con Supabase (PostgreSQL)'
+                      : '🟡 Modo Local (IndexedDB)'}
                 </span>
               </div>
             </div>
@@ -106,7 +122,12 @@ export const CloudConfigModal: React.FC<CloudConfigModalProps> = ({
             Aplica el esquema incluido únicamente en un proyecto Supabase nuevo. No uses la base de datos del prototipo anterior: almacenaba contraseñas y tenía políticas de acceso públicas.
           </p>
 
-          <form onSubmit={handleSave} className="space-y-3.5">
+          {isManaged ? (
+            <p className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs leading-relaxed text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-200">
+              La conexión de la aplicación ya está configurada para todos los dispositivos. No necesitas copiar credenciales en tu teléfono.
+            </p>
+          ) : (
+            <form onSubmit={handleSave} className="space-y-3.5">
             <div>
               <label className="block text-xs font-bold text-stone-700 dark:text-stone-300 uppercase tracking-wider mb-1">
                 Project URL (Supabase)
@@ -134,33 +155,6 @@ export const CloudConfigModal: React.FC<CloudConfigModalProps> = ({
                 className="w-full px-3.5 py-2.5 rounded-xl border border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-stone-900 text-stone-900 dark:text-stone-100 text-xs sm:text-sm font-mono focus:outline-none focus:ring-2 focus:ring-emerald-400"
               />
             </div>
-
-            {/* Quick SQL Copy box */}
-            <div className="p-3 bg-stone-50 dark:bg-stone-900/60 rounded-xl border border-stone-200 dark:border-stone-800 flex items-center justify-between gap-3">
-              <div className="text-xs text-stone-600 dark:text-stone-400">
-                <span className="font-bold text-stone-900 dark:text-stone-200 block">Esquema seguro de Supabase</span>
-                Abre o copia el SQL para un proyecto nuevo
-              </div>
-              <button
-                type="button"
-                onClick={handleCopySQL}
-                className="px-3 py-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800 text-xs font-bold flex items-center gap-1 hover:bg-emerald-100 cursor-pointer"
-              >
-                {copied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
-                <span>{copied ? 'Copiado' : 'Copiar SQL'}</span>
-              </button>
-            </div>
-            {copyError && (
-              <p role="alert" className="text-xs text-rose-600 dark:text-rose-400">{copyError}</p>
-            )}
-            <a
-              href={`${import.meta.env.BASE_URL}supabase-schema.sql`}
-              target="_blank"
-              rel="noreferrer"
-              className="text-xs text-emerald-700 dark:text-emerald-300 hover:underline"
-            >
-              Abrir el esquema SQL incluido
-            </a>
 
             <div className="pt-2 flex items-center justify-between gap-2">
               {isConnected ? (
@@ -191,8 +185,34 @@ export const CloudConfigModal: React.FC<CloudConfigModalProps> = ({
                 Guardar Conexión Nube
               </button>
             </div>
-          </form>
+            </form>
+          )}
 
+          <div className="p-3 bg-stone-50 dark:bg-stone-900/60 rounded-xl border border-stone-200 dark:border-stone-800 flex items-center justify-between gap-3">
+            <div className="text-xs text-stone-600 dark:text-stone-400">
+              <span className="font-bold text-stone-900 dark:text-stone-200 block">Esquema seguro de Supabase</span>
+              Abre o copia el SQL para un proyecto nuevo
+            </div>
+            <button
+              type="button"
+              onClick={handleCopySQL}
+              className="px-3 py-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800 text-xs font-bold flex items-center gap-1 hover:bg-emerald-100 cursor-pointer"
+            >
+              {copied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+              <span>{copied ? 'Copiado' : 'Copiar SQL'}</span>
+            </button>
+          </div>
+          {copyError && (
+            <p role="alert" className="text-xs text-rose-600 dark:text-rose-400">{copyError}</p>
+          )}
+          <a
+            href={`${import.meta.env.BASE_URL}supabase-schema.sql`}
+            target="_blank"
+            rel="noreferrer"
+            className="text-xs text-emerald-700 dark:text-emerald-300 hover:underline"
+          >
+            Abrir el esquema SQL incluido
+          </a>
         </div>
 
       </div>

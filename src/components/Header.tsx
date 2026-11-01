@@ -101,7 +101,10 @@ export const Header: React.FC<HeaderProps> = ({
   const totalMilestones = memories.filter(m => m.isMilestone || m.category === 'aniversario' || m.category === 'cita').length
 
   return (
-    <header className="sticky top-0 z-30 bg-white/90 dark:bg-[#16141c]/90 backdrop-blur-md border-b border-stone-200/80 dark:border-stone-800/80 px-4 sm:px-8 py-3 transition-colors">
+    <header
+      className="sticky top-0 z-30 bg-white/90 dark:bg-[#16141c]/90 backdrop-blur-md border-b border-stone-200/80 dark:border-stone-800/80 px-4 sm:px-8 py-3 transition-colors"
+      style={{ paddingTop: 'max(0.75rem, env(safe-area-inset-top))' }}
+    >
       <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-3">
         
         {/* Brand / Logo (Secret: 3 clicks activates Easter Egg for Grace) */}

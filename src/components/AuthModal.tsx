@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { X, UserPlus, LogIn, Heart, Lock, User, Sparkles } from 'lucide-react'
 import type { UserProfile } from '../types'
-import { getAllUsersLocal, loginUser, registerUser } from '../services/auth'
+import { loginUser, registerUser } from '../services/auth'
 import { triggerJoyfulConfetti } from '../services/confetti'
 import { isCloudDatabaseConnected } from '../services/supabase'
 
@@ -11,8 +11,10 @@ function getErrorMessage(error: unknown, fallback: string): string {
 
 interface AuthModalProps {
   isOpen: boolean
+  canClose: boolean
   onClose: () => void
   onSuccess: (user: UserProfile) => void
+  onOpenCloudConfig: () => void
 }
 
 const EMOJI_OPTIONS = [
@@ -26,8 +28,10 @@ const EMOJI_OPTIONS = [
 
 export const AuthModal: React.FC<AuthModalProps> = ({
   isOpen,
+  canClose,
   onClose,
-  onSuccess
+  onSuccess,
+  onOpenCloudConfig
 }) => {
   const [tab, setTab] = useState<'login' | 'register'>('login')
   
@@ -50,7 +54,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   if (!isOpen) return null
 
   const isCloudMode = isCloudDatabaseConnected()
-  const existingUsers = isCloudMode ? [] : getAllUsersLocal()
 
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -106,29 +109,27 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     }
   }
 
-  const handleQuickSwitch = async (u: UserProfile) => {
-    try {
-      const logged = await loginUser(u.username)
-      triggerJoyfulConfetti()
-      onSuccess(logged)
-      onClose()
-    } catch (error) {
-      setErrorMsg(getErrorMessage(error, 'Error al cambiar de perfil'))
-    }
-  }
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 dark:bg-black/80 backdrop-blur-sm overflow-y-auto animate-fade-in">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 dark:bg-black/80 backdrop-blur-sm overflow-y-auto animate-fade-in"
+      style={{
+        paddingTop: 'max(1rem, env(safe-area-inset-top))',
+        paddingBottom: 'max(1rem, env(safe-area-inset-bottom))'
+      }}
+    >
       <div className="relative w-full max-w-md bg-white dark:bg-[#191720] rounded-2xl border border-stone-200 dark:border-stone-800 shadow-2xl overflow-hidden my-6">
         
         {/* Header */}
         <div className="relative bg-gradient-to-r from-rose-500 via-rose-600 to-amber-500 p-6 text-white">
-          <button
-            onClick={onClose}
-            className="absolute top-4 right-4 p-1.5 rounded-lg hover:bg-white/20 transition-colors cursor-pointer"
-          >
-            <X className="w-5 h-5 text-white" />
-          </button>
+          {canClose && (
+            <button
+              onClick={onClose}
+              aria-label="Cerrar"
+              className="absolute top-4 right-4 p-1.5 rounded-lg hover:bg-white/20 transition-colors cursor-pointer"
+            >
+              <X className="w-5 h-5 text-white" />
+            </button>
+          )}
 
           <div className="flex items-center gap-2.5 mb-1">
             <div className="w-9 h-9 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center font-bold">
@@ -146,7 +147,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         </div>
 
         {/* Tab switch */}
-        <div className="flex border-b border-stone-200 dark:border-stone-800 bg-stone-50 dark:bg-[#14121a]">
+        {isCloudMode && <div className="flex border-b border-stone-200 dark:border-stone-800 bg-stone-50 dark:bg-[#14121a]">
           <button
             onClick={() => { setTab('login'); setErrorMsg('') }}
             className={`flex-1 py-3 text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer ${
@@ -169,7 +170,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             <UserPlus className="w-4 h-4" />
             <span>Crear Cuenta</span>
           </button>
-        </div>
+        </div>}
 
         {/* Content */}
         <div className="p-6 space-y-4">
@@ -185,8 +186,23 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             </div>
           )}
 
-          {/* Login Form */}
-          {tab === 'login' ? (
+          {!isCloudMode ? (
+            <div className="space-y-3">
+              <p className="text-sm font-bold text-stone-900 dark:text-stone-100">
+                Configura las cuentas seguras para continuar
+              </p>
+              <p className="text-xs leading-relaxed text-stone-600 dark:text-stone-300">
+                Para que cada cuenta sea única y solo vea sus recuerdos, la aplicación requiere Supabase Auth. Los perfiles locales no son cuentas protegidas y no se mostrarán aquí.
+              </p>
+              <button
+                type="button"
+                onClick={onOpenCloudConfig}
+                className="w-full rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 py-2.5 text-sm font-bold text-white cursor-pointer"
+              >
+                Configurar Supabase
+              </button>
+            </div>
+          ) : tab === 'login' ? (
             <form onSubmit={handleLoginSubmit} className="space-y-4">
               <div>
                 <label className="block text-xs font-bold text-stone-700 dark:text-stone-300 uppercase tracking-wider mb-1.5 flex items-center gap-1">
@@ -230,33 +246,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 <span>{isSubmitting ? 'Conectando...' : 'Entrar a mis recuerdos'}</span>
               </button>
 
-              {/* Existing accounts quick select */}
-              {existingUsers.length > 0 && (
-                <div className="pt-3 border-t border-stone-200 dark:border-stone-800">
-                  <p className="text-[11px] font-bold text-stone-400 uppercase tracking-wider mb-2">
-                    Cuentas en este equipo:
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    {existingUsers.map(u => (
-                      <button
-                        type="button"
-                        key={u.id}
-                        onClick={() => handleQuickSwitch(u)}
-                        className="px-3 py-1.5 rounded-lg border border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-stone-800/60 hover:border-rose-400 text-xs font-semibold text-stone-800 dark:text-stone-200 flex items-center gap-1.5 transition-all cursor-pointer"
-                      >
-                        <span>{u.avatarEmoji}</span>
-                        <span>{u.name}</span>
-                        <span className="text-stone-400">(@{u.username})</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-              {!isCloudMode && (
-                <p className="text-[11px] leading-relaxed text-stone-500 dark:text-stone-400">
-                  Los perfiles locales solo organizan recuerdos en este navegador; no son cuentas protegidas ni se sincronizan entre dispositivos.
-                </p>
-              )}
             </form>
           ) : (
             /* Register Form */

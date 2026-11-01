@@ -27,80 +27,13 @@ function openDB(): Promise<IDBDatabase> {
   })
 }
 
-export const INITIAL_MEMORIES: MemoryMoment[] = [
-  {
-    id: 'demo-1',
-    title: 'Nuestra Primera Cita ☕✨',
-    date: '2024-02-14',
-    category: 'cita',
-    emoji: '🌹',
-    description: 'Nos vimos en la cafetería del centro. Platicamos durante horas hasta que cerraron el lugar. ¡Los dos estábamos súper nerviosos pero felices!',
-    location: 'Café & Libros del Centro',
-    photos: [
-      {
-        id: 'p-1',
-        url: 'https://images.unsplash.com/photo-1517256064527-09c73fc73e38?auto=format&fit=crop&w=800&q=80',
-        caption: 'Las tazas de café y las risas nerviosas del inicio'
-      }
-    ],
-    feeling: 'magico',
-    isMilestone: true,
-    songTitle: 'Perfect',
-    songArtist: 'Ed Sheeran',
-    createdAt: Date.now() - 1000 * 60 * 60 * 24 * 300,
-    updatedAt: Date.now() - 1000 * 60 * 60 * 24 * 300
-  },
-  {
-    id: 'demo-2',
-    title: 'Primer Aniversario Juntos 🥂💖',
-    date: '2025-02-14',
-    category: 'aniversario',
-    emoji: '💍',
-    description: '¡Un año entero lleno de risas, apoyo incondicional y momentos inolvidables! Fuimos a cenar a la terraza con vista a la ciudad.',
-    location: 'Mirador La Terraza',
-    photos: [
-      {
-        id: 'p-2',
-        url: 'https://images.unsplash.com/photo-1511285560929-80b456fea0bc?auto=format&fit=crop&w=800&q=80',
-        caption: 'Celebrando nuestro primer año'
-      }
-    ],
-    feeling: 'amor',
-    isMilestone: true,
-    songTitle: 'Yellow',
-    songArtist: 'Coldplay',
-    createdAt: Date.now() - 1000 * 60 * 60 * 24 * 60,
-    updatedAt: Date.now() - 1000 * 60 * 60 * 24 * 60
-  },
-  {
-    id: 'demo-3',
-    title: 'Escapada a la Playa al Atardecer 🌅🌊',
-    date: '2024-08-10',
-    category: 'viaje',
-    emoji: '✈️',
-    description: 'Manejamos hasta la costa sin planearlo mucho. Caminamos por la orilla comiendo helado mientras el cielo se pintaba de color naranja y morado.',
-    location: 'Playa Costa Dorada',
-    photos: [
-      {
-        id: 'p-3',
-        url: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=800&q=80',
-        caption: 'El atardecer más bonito del año'
-      }
-    ],
-    feeling: 'feliz',
-    isMilestone: false,
-    createdAt: Date.now() - 1000 * 60 * 60 * 24 * 150,
-    updatedAt: Date.now() - 1000 * 60 * 60 * 24 * 150
-  }
-]
-
 export async function getAllMemories(userId?: string): Promise<MemoryMoment[]> {
   const supabase = getSupabaseClient()
   if (supabase) {
     const { data: authData, error: authError } = await supabase.auth.getUser()
     if (authError) throw new Error(`No se pudo validar la sesión: ${authError.message}`)
     if (!authData.user) throw new Error('Inicia sesión para consultar tus recuerdos en la nube.')
-    if (userId && userId !== authData.user.id) {
+    if (!userId || userId !== authData.user.id) {
       throw new Error('La sesión no coincide con el perfil seleccionado.')
     }
 
@@ -131,6 +64,8 @@ export async function getAllMemories(userId?: string): Promise<MemoryMoment[]> {
     }))
   }
 
+  if (!userId) return []
+
   try {
     const db = await openDB()
     return new Promise((resolve) => {
@@ -141,16 +76,9 @@ export async function getAllMemories(userId?: string): Promise<MemoryMoment[]> {
       request.onsuccess = () => {
         let results = request.result as MemoryMoment[]
         if (!results || results.length === 0) {
-          const initialized = localStorage.getItem('momentos_initialized')
-          if (!initialized) {
-            seedInitialMemories(userId).then(seeded => resolve(seeded))
-            return
-          }
           resolve([])
         } else {
-          if (userId) {
-            results = results.filter(m => !m.userId || m.userId === userId)
-          }
+          results = results.filter(m => m.userId === userId)
           results.sort((a, b) => b.date.localeCompare(a.date))
           resolve(results)
         }
@@ -158,51 +86,34 @@ export async function getAllMemories(userId?: string): Promise<MemoryMoment[]> {
 
       request.onerror = () => {
         const stored = localStorage.getItem(LOCAL_STORAGE_BACKUP_KEY)
-        let list: MemoryMoment[] = stored ? JSON.parse(stored) : INITIAL_MEMORIES
-        if (userId) {
-          list = list.filter(m => !m.userId || m.userId === userId)
-        }
-        resolve(list)
+        const list: MemoryMoment[] = stored ? JSON.parse(stored) : []
+        const ownMemories = list.filter(m => m.userId === userId)
+        ownMemories.sort((a, b) => b.date.localeCompare(a.date))
+        resolve(ownMemories)
       }
     })
   } catch (err) {
     console.warn('IndexedDB error, using localStorage fallback', err)
     const stored = localStorage.getItem(LOCAL_STORAGE_BACKUP_KEY)
-    if (!stored) {
-      localStorage.setItem(LOCAL_STORAGE_BACKUP_KEY, JSON.stringify(INITIAL_MEMORIES))
-      return INITIAL_MEMORIES
-    }
-    let list: MemoryMoment[] = JSON.parse(stored)
-    if (userId) {
-      list = list.filter(m => !m.userId || m.userId === userId)
-    }
-    return list
+    const list: MemoryMoment[] = stored ? JSON.parse(stored) : []
+    return list.filter(m => m.userId === userId).sort((a, b) => b.date.localeCompare(a.date))
   }
-}
-
-export async function seedInitialMemories(userId?: string): Promise<MemoryMoment[]> {
-  const seeded = INITIAL_MEMORIES.map(m => ({ ...m, userId }))
-  try {
-    const db = await openDB()
-    const transaction = db.transaction(STORE_NAME, 'readwrite')
-    const store = transaction.objectStore(STORE_NAME)
-    for (const item of seeded) {
-      store.put(item)
-    }
-    localStorage.setItem('momentos_initialized', 'true')
-  } catch {
-    localStorage.setItem(LOCAL_STORAGE_BACKUP_KEY, JSON.stringify(seeded))
-  }
-  return seeded
 }
 
 export async function saveMemory(moment: MemoryMoment, userId?: string): Promise<void> {
-  const itemToSave: MemoryMoment = {
-    ...moment,
-    userId: moment.userId || userId
+  const supabase = getSupabaseClient()
+  if (!userId) {
+    throw new Error('Inicia sesión antes de guardar recuerdos.')
+  }
+  if (moment.userId && moment.userId !== userId) {
+    throw new Error('No puedes guardar recuerdos en el perfil de otra cuenta.')
   }
 
-  const supabase = getSupabaseClient()
+  const itemToSave: MemoryMoment = {
+    ...moment,
+    userId
+  }
+
   if (supabase) {
     const { data: authData, error: authError } = await supabase.auth.getUser()
     if (authError) throw new Error(`No se pudo validar la sesión: ${authError.message}`)
@@ -234,55 +145,94 @@ export async function saveMemory(moment: MemoryMoment, userId?: string): Promise
     return
   }
 
+  let ownershipError: Error | null = null
   try {
     const db = await openDB()
-    return new Promise((resolve, reject) => {
+    await new Promise<void>((resolve, reject) => {
       const transaction = db.transaction(STORE_NAME, 'readwrite')
       const store = transaction.objectStore(STORE_NAME)
-      const request = store.put(itemToSave)
+      const request = store.get(itemToSave.id)
 
       request.onsuccess = () => {
-        localStorage.setItem('momentos_initialized', 'true')
-        resolve()
+        const existing = request.result as MemoryMoment | undefined
+        if (existing && existing.userId !== userId) {
+          ownershipError = new Error('No puedes editar recuerdos de otra cuenta.')
+          transaction.abort()
+          return
+        }
+        store.put(itemToSave)
       }
-      request.onerror = () => reject(request.error)
+      request.onerror = () => reject(request.error || new Error('No se pudo revisar el recuerdo.'))
+      transaction.oncomplete = () => resolve()
+      transaction.onerror = () => reject(transaction.error || new Error('No se pudo guardar el recuerdo.'))
+      transaction.onabort = () => reject(ownershipError || transaction.error || new Error('No se pudo guardar el recuerdo.'))
     })
   } catch {
-    const list = await getAllMemories(userId)
+    if (ownershipError) throw ownershipError
+    const stored = localStorage.getItem(LOCAL_STORAGE_BACKUP_KEY)
+    const list: MemoryMoment[] = stored ? JSON.parse(stored) : []
     const index = list.findIndex(m => m.id === itemToSave.id)
+    if (index >= 0 && list[index].userId !== userId) {
+      throw new Error('No puedes editar recuerdos de otra cuenta.')
+    }
     if (index >= 0) {
       list[index] = itemToSave
     } else {
-      list.unshift(itemToSave)
+      list.push(itemToSave)
     }
     localStorage.setItem(LOCAL_STORAGE_BACKUP_KEY, JSON.stringify(list))
   }
 }
 
-export async function deleteMemory(id: string): Promise<void> {
+export async function deleteMemory(id: string, userId?: string): Promise<void> {
+  if (!userId) throw new Error('Inicia sesión antes de borrar recuerdos.')
+
   const supabase = getSupabaseClient()
   if (supabase) {
     const { data: authData, error: authError } = await supabase.auth.getUser()
     if (authError) throw new Error(`No se pudo validar la sesión: ${authError.message}`)
     if (!authData.user) throw new Error('Inicia sesión para borrar recuerdos en la nube.')
+    if (userId !== authData.user.id) {
+      throw new Error('La sesión no coincide con el perfil seleccionado.')
+    }
 
     const { error } = await supabase.from('memories').delete().eq('id', id)
     if (error) throw new Error(`No se pudo borrar el recuerdo: ${error.message}`)
     return
   }
 
+  let ownershipError: Error | null = null
   try {
     const db = await openDB()
-    return new Promise((resolve, reject) => {
+    await new Promise<void>((resolve, reject) => {
       const transaction = db.transaction(STORE_NAME, 'readwrite')
       const store = transaction.objectStore(STORE_NAME)
-      const request = store.delete(id)
-      request.onsuccess = () => resolve()
-      request.onerror = () => reject(request.error)
+      const request = store.get(id)
+      request.onsuccess = () => {
+        const existing = request.result as MemoryMoment | undefined
+        if (!existing || existing.userId !== userId) {
+          ownershipError = new Error('Solo puedes borrar recuerdos de tu propia cuenta.')
+          transaction.abort()
+          return
+        }
+        store.delete(id)
+      }
+      request.onerror = () => reject(request.error || new Error('No se pudo revisar el recuerdo.'))
+      transaction.oncomplete = () => resolve()
+      transaction.onerror = () => reject(transaction.error || new Error('No se pudo borrar el recuerdo.'))
+      transaction.onabort = () => reject(ownershipError || transaction.error || new Error('No se pudo borrar el recuerdo.'))
     })
   } catch {
-    const list = await getAllMemories()
+    if (ownershipError) throw ownershipError
+    const stored = localStorage.getItem(LOCAL_STORAGE_BACKUP_KEY)
+    const list: MemoryMoment[] = stored ? JSON.parse(stored) : []
     const filtered = list.filter(m => m.id !== id)
+    if (filtered.length === list.length) {
+      throw new Error('No existe un recuerdo propio con ese identificador.')
+    }
+    if (list.find(m => m.id === id)?.userId !== userId) {
+      throw new Error('Solo puedes borrar recuerdos de tu propia cuenta.')
+    }
     localStorage.setItem(LOCAL_STORAGE_BACKUP_KEY, JSON.stringify(filtered))
   }
 }
