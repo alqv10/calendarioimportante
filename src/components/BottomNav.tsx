@@ -18,7 +18,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
   onToggleDarkMode
 }) => {
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-[#16141c]/95 backdrop-blur-lg border-t border-stone-200 dark:border-stone-800 px-3 py-2 transition-colors">
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-[#16141c]/95 backdrop-blur-lg border-t border-stone-200 dark:border-stone-800 px-3 pt-2 transition-colors" style={{ paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom))' }}>
       <div className="flex items-center justify-around max-w-md mx-auto">
         
         {/* Calendar */}
