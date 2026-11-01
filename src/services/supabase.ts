@@ -24,18 +24,16 @@ export function clearSupabaseConfig(): void {
 }
 
 let supabaseInstance: SupabaseClient | null = null
+let supabaseInstanceConfig: string | null = null
 
 export function getSupabaseClient(): SupabaseClient | null {
   const config = getSavedSupabaseConfig()
   if (!config) return null
 
-  if (!supabaseInstance) {
-    try {
-      supabaseInstance = createClient(config.url, config.anonKey)
-    } catch (err) {
-      console.warn('Failed to initialize Supabase client', err)
-      return null
-    }
+  const configKey = `${config.url}\n${config.anonKey}`
+  if (!supabaseInstance || supabaseInstanceConfig !== configKey) {
+    supabaseInstance = createClient(config.url, config.anonKey)
+    supabaseInstanceConfig = configKey
   }
   return supabaseInstance
 }

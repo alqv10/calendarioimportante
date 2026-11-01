@@ -11,43 +11,42 @@ Actualizado: 2026-10-31
 - Calendario mensual, vista de recuerdos y línea de tiempo con búsqueda y filtros.
 - Edición de recuerdos con fotos, ubicación, descripción, hitos y música.
 - Tema claro/oscuro y navegación móvil.
-- Cuentas locales por perfil y almacenamiento de recuerdos en IndexedDB, con respaldo en `localStorage`.
+- Perfiles locales por navegador y almacenamiento de recuerdos en IndexedDB, con respaldo en `localStorage`.
+- Cuentas cloud basadas en Supabase Auth (correo/contraseña), creación de perfiles al registrarse y políticas RLS por propietario.
 - Easter egg de Grace: escribir `grace` o hacer triple clic en la marca.
 - Configuración PWA, manifiesto, icono SVG y ajustes iniciales para iOS.
 - Configuración de compilación para Vercel y Netlify (`vercel.json` y `netlify.toml`).
-- Esquema SQL inicial de Supabase (`supabase-schema.sql`).
+- Esquema SQL protegido para un proyecto Supabase nuevo (`public/supabase-schema.sql`); detecta y rechaza el esquema inseguro del prototipo.
 - El workflow de GitHub Pages ya se quitó.
 
 ## Estado actual de Git y publicación
 
 - Repositorio y remoto actuales: `alqv10/calendarioimportante`, rama `master`.
-- La rama estaba sincronizada con `origin/master` al preparar este informe.
-- Los cambios de limpieza y compatibilidad móvil/iOS estaban preparados en staging; esta entrega los agrupa con este informe para confirmarlos juntos.
+- La rama `master` está sincronizada con `origin/master`.
 - Vercel y Netlify tienen archivos de configuración, pero no hay una URL de producción ni un despliegue verificado en este estado.
-- No se lanzó un despliegue: este checkout no está vinculado a un proyecto de Vercel y la configuración actual de Supabase no debe exponerse a usuarios reales.
-- El README todavía menciona `mmsuarez-oss`, GitHub Pages y un workflow que ya no existe; hay que actualizarlo antes de usarlo como guía.
+- No se lanzó un despliegue: este checkout no está vinculado a un proyecto de Vercel y no se ha probado un proyecto Supabase nuevo.
+- El README describe el repositorio y las instrucciones actuales; GitHub Pages ya no está configurado.
 - No borrar el repositorio anterior de GitHub hasta comprobar que el nuevo remoto conserva el historial y todos los cambios que se quieren mantener.
 
 ## Pendiente antes de aceptar usuarios reales
 
 ### Prioridad crítica: autenticación y privacidad
 
-El inicio de sesión actual **no es autenticación segura para un servicio público**. Los perfiles se guardan en el navegador; si se configura Supabase, el código también guarda y consulta contraseñas en la tabla `profiles`. El esquema actual contiene políticas RLS con `using (true)` y `with check (true)`, que permiten acceso amplio a los datos.
+El código ahora utiliza Supabase Auth para cuentas en la nube y RLS para restringir tablas por usuario. El esquema seguro **no se ha ejecutado ni verificado contra una instancia real**.
 
-Antes de conectar una base de datos real:
+Antes de aceptar usuarios reales:
 
-1. Implementar autenticación de Supabase Auth; no guardar ni consultar contraseñas propias en `profiles`.
-2. Asociar perfiles y recuerdos al identificador autenticado y reemplazar las políticas abiertas por políticas RLS que limiten cada operación al propietario correspondiente.
-3. Revisar y probar el acceso de lectura, escritura, modificación y borrado con más de una cuenta.
+1. Crear un proyecto Supabase nuevo y ejecutar `public/supabase-schema.sql`.
+2. Verificar registro, confirmación por correo, inicio/cierre de sesión y aislamiento CRUD de recuerdos entre dos cuentas.
+3. Configurar y probar URL permitidas/callbacks de autenticación en Supabase.
 4. No publicar credenciales secretas en el cliente. La clave pública `anon` no sustituye las políticas RLS.
 
-**No usar el esquema y las políticas actuales con datos personales reales ni con cuentas de usuarios.**
+**No conectar el prototipo Supabase anterior ni usar el esquema antiguo con datos personales reales.** No hay migración automática de esos perfiles/recuerdos.
 
 ### Publicación
 
 - Elegir Vercel o Netlify, vincular el repositorio `alqv10/calendarioimportante` y verificar una compilación y URL de producción.
-- Configurar Supabase y cualquier variable de entorno necesaria en el proveedor elegido, una vez que la autenticación y las políticas sean seguras.
-- Actualizar el README con el repositorio y proveedor actuales, y quitar las instrucciones obsoletas de GitHub Pages.
+- Configurar Supabase y las URL de autenticación para el dominio final.
 
 ### Compatibilidad con iPhone/iOS
 
@@ -63,4 +62,4 @@ Antes de conectar una base de datos real:
 
 ## Verificación conocida
 
-En esta entrega, `bun run build` terminó correctamente con TypeScript y Vite. Vite avisó que el bundle JavaScript principal supera 500 kB. `bun run lint` terminó correctamente con seis advertencias React preexistentes. El proyecto no declara un script de pruebas automatizadas.
+La limpieza/iOS del commit `8156cda` pasó `bun run build`; en ese momento lint reportó seis advertencias React. La implementación actual de Supabase Auth/RLS aún requiere validación posterior. El bundle principal supera 500 kB. El proyecto no declara un script de pruebas automatizadas.

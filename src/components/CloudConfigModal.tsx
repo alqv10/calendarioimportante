@@ -16,6 +16,7 @@ export const CloudConfigModal: React.FC<CloudConfigModalProps> = ({
   const [url, setUrl] = useState('')
   const [anonKey, setAnonKey] = useState('')
   const [copied, setCopied] = useState(false)
+  const [copyError, setCopyError] = useState('')
   const isConnected = !!getSavedSupabaseConfig()
 
   useEffect(() => {
@@ -53,47 +54,17 @@ export const CloudConfigModal: React.FC<CloudConfigModalProps> = ({
     }
   }
 
-  const handleCopySQL = () => {
-    const sql = `-- Tabla de Perfiles
-create table if not exists public.profiles (
-  id text primary key,
-  name text not null,
-  username text not null unique,
-  password text,
-  partner_name text default 'Grace',
-  avatar_emoji text default '💖',
-  created_at bigint not null
-);
-
--- Tabla de Recuerdos
-create table if not exists public.memories (
-  id text primary key,
-  user_id text references public.profiles(id) on delete cascade,
-  title text not null,
-  date text not null,
-  category text not null,
-  emoji text not null,
-  description text default '',
-  location text,
-  feeling text,
-  is_milestone boolean default false,
-  song_title text,
-  song_artist text,
-  song_url text,
-  photos jsonb default '[]'::jsonb,
-  audio_data text,
-  created_at bigint not null,
-  updated_at bigint not null
-);
-
-alter table public.profiles enable row level security;
-alter table public.memories enable row level security;
-create policy "acceso_perfiles" on public.profiles for all using (true) with check (true);
-create policy "acceso_recuerdos" on public.memories for all using (true) with check (true);`
-
-    navigator.clipboard.writeText(sql)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
+  const handleCopySQL = async () => {
+    setCopyError('')
+    try {
+      const response = await fetch(`${import.meta.env.BASE_URL}supabase-schema.sql`)
+      if (!response.ok) throw new Error('No se pudo cargar el esquema SQL.')
+      await navigator.clipboard.writeText(await response.text())
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch (error) {
+      setCopyError(error instanceof Error ? error.message : 'No se pudo copiar el esquema SQL.')
+    }
   }
 
   return (
@@ -129,7 +100,10 @@ create policy "acceso_recuerdos" on public.memories for all using (true) with ch
         {/* Form Body */}
         <div className="p-5 sm:p-6 space-y-4">
           <p className="text-xs sm:text-sm text-stone-600 dark:text-stone-300 leading-relaxed">
-            Conecta tu proyecto con <strong>Supabase (gratis)</strong> para que múltiples personas puedan crear cuentas, sincronizar recuerdos en tiempo real y acceder desde cualquier teléfono o computadora.
+            La conexión activa cuentas verificadas por correo con Supabase Auth y sincroniza los recuerdos con tu base de datos. Cada cuenta solo puede leer y modificar sus propios datos.
+          </p>
+          <p className="text-xs leading-relaxed text-amber-800 dark:text-amber-200">
+            Aplica el esquema incluido únicamente en un proyecto Supabase nuevo. No uses la base de datos del prototipo anterior: almacenaba contraseñas y tenía políticas de acceso públicas.
           </p>
 
           <form onSubmit={handleSave} className="space-y-3.5">
@@ -164,8 +138,8 @@ create policy "acceso_recuerdos" on public.memories for all using (true) with ch
             {/* Quick SQL Copy box */}
             <div className="p-3 bg-stone-50 dark:bg-stone-900/60 rounded-xl border border-stone-200 dark:border-stone-800 flex items-center justify-between gap-3">
               <div className="text-xs text-stone-600 dark:text-stone-400">
-                <span className="font-bold text-stone-900 dark:text-stone-200 block">Esquema SQL de Tablas</span>
-                Copia y pega en el SQL Editor de Supabase
+                <span className="font-bold text-stone-900 dark:text-stone-200 block">Esquema seguro de Supabase</span>
+                Abre o copia el SQL para un proyecto nuevo
               </div>
               <button
                 type="button"
@@ -176,6 +150,17 @@ create policy "acceso_recuerdos" on public.memories for all using (true) with ch
                 <span>{copied ? 'Copiado' : 'Copiar SQL'}</span>
               </button>
             </div>
+            {copyError && (
+              <p role="alert" className="text-xs text-rose-600 dark:text-rose-400">{copyError}</p>
+            )}
+            <a
+              href={`${import.meta.env.BASE_URL}supabase-schema.sql`}
+              target="_blank"
+              rel="noreferrer"
+              className="text-xs text-emerald-700 dark:text-emerald-300 hover:underline"
+            >
+              Abrir el esquema SQL incluido
+            </a>
 
             <div className="pt-2 flex items-center justify-between gap-2">
               {isConnected ? (

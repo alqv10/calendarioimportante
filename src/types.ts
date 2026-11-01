@@ -13,7 +13,6 @@ export interface UserProfile {
   id: string
   name: string
   username: string
-  password?: string
   avatarEmoji: string
   partnerName?: string
   createdAt: number

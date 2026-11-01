@@ -12,14 +12,19 @@ import { CloudConfigModal } from './components/CloudConfigModal'
 import { BottomNav } from './components/BottomNav'
 import type { MemoryMoment, ViewMode, UserProfile } from './types'
 import { getAllMemories, saveMemory, deleteMemory } from './services/storage'
-import { getCurrentUser, logoutUser } from './services/auth'
+import { getCurrentUser, logoutUser, restoreCurrentUser } from './services/auth'
 import { isCloudDatabaseConnected } from './services/supabase'
 import { Heart, Sparkles, Flower2 } from 'lucide-react'
 
 export function App() {
-  const [currentUser, setCurrentUser] = useState<UserProfile | null>(() => getCurrentUser())
+  const [currentUser, setCurrentUser] = useState<UserProfile | null>(() =>
+    isCloudDatabaseConnected() ? null : getCurrentUser()
+  )
+  const [authReady, setAuthReady] = useState(() => !isCloudDatabaseConnected())
+  const [authError, setAuthError] = useState('')
   const [memories, setMemories] = useState<MemoryMoment[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [loadError, setLoadError] = useState('')
   const [currentView, setCurrentView] = useState<ViewMode>('calendar')
 
   // Dark Mode state
@@ -40,6 +45,23 @@ export function App() {
   const [isCloudConfigOpen, setIsCloudConfigOpen] = useState(false)
   const [isCloudConnected, setIsCloudConnected] = useState(() => isCloudDatabaseConnected())
 
+  useEffect(() => {
+    let active = true
+    restoreCurrentUser()
+      .then(user => {
+        if (!active) return
+        setCurrentUser(user)
+        setAuthReady(true)
+        if (isCloudDatabaseConnected() && !user) setIsAuthOpen(true)
+      })
+      .catch((error: unknown) => {
+        if (!active) return
+        setAuthError(error instanceof Error ? error.message : 'No se pudo restaurar la sesión.')
+        setAuthReady(true)
+      })
+    return () => { active = false }
+  }, [])
+
   // Sync dark mode class on document
   useEffect(() => {
     if (isDarkMode) {
@@ -57,14 +79,25 @@ export function App() {
 
   // Load memories for current user
   const fetchMemories = useCallback(async () => {
+    if (!authReady) return
+    if (isCloudDatabaseConnected() && !currentUser) {
+      setMemories([])
+      setIsLoading(false)
+      return
+    }
+
     setIsLoading(true)
+    setLoadError('')
     try {
       const data = await getAllMemories(currentUser?.id)
       setMemories(data)
+    } catch (error) {
+      setMemories([])
+      setLoadError(error instanceof Error ? error.message : 'No se pudieron cargar los recuerdos.')
     } finally {
       setIsLoading(false)
     }
-  }, [currentUser])
+  }, [authReady, currentUser])
 
   useEffect(() => {
     fetchMemories()
@@ -120,14 +153,42 @@ export function App() {
     setDayModalDate(dateStr)
   }
 
-  const handleLogout = () => {
-    logoutUser()
-    setCurrentUser(null)
-    fetchMemories()
+  const handleLogout = async () => {
+    try {
+      await logoutUser()
+      setCurrentUser(null)
+      setMemories([])
+      if (isCloudDatabaseConnected()) setIsAuthOpen(true)
+    } catch (error) {
+      setAuthError(error instanceof Error ? error.message : 'No se pudo cerrar la sesión.')
+    }
   }
 
   const handleAuthSuccess = (user: UserProfile) => {
+    setAuthError('')
     setCurrentUser(user)
+  }
+
+  const handleCloudConfigChanged = () => {
+    const cloudConnected = isCloudDatabaseConnected()
+    setIsCloudConnected(cloudConnected)
+    setCurrentUser(null)
+    setMemories([])
+    setLoadError('')
+    setAuthError('')
+    setAuthReady(!cloudConnected)
+    if (!cloudConnected) return
+
+    restoreCurrentUser()
+      .then(user => {
+        setCurrentUser(user)
+        setAuthReady(true)
+        if (!user) setIsAuthOpen(true)
+      })
+      .catch((error: unknown) => {
+        setAuthError(error instanceof Error ? error.message : 'No se pudo restaurar la sesión.')
+        setAuthReady(true)
+      })
   }
 
   const dayMoments = dayModalDate
@@ -156,7 +217,17 @@ export function App() {
 
       {/* Main Content Area */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-8 py-5 sm:py-8">
-        {isLoading ? (
+        {authError && (
+          <div role="alert" className="mb-4 rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800 dark:border-rose-900 dark:bg-rose-950/50 dark:text-rose-200">
+            {authError}
+          </div>
+        )}
+        {loadError && (
+          <div role="alert" className="mb-4 rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800 dark:border-rose-900 dark:bg-rose-950/50 dark:text-rose-200">
+            {loadError}
+          </div>
+        )}
+        {isLoading || !authReady ? (
           <div className="flex flex-col items-center justify-center min-h-[50vh]">
             <div className="w-10 h-10 rounded-lg border-4 border-rose-300 border-t-rose-600 animate-spin mb-4" />
             <p className="text-stone-500 dark:text-stone-400 font-semibold text-sm">
@@ -262,10 +333,7 @@ export function App() {
       <CloudConfigModal
         isOpen={isCloudConfigOpen}
         onClose={() => setIsCloudConfigOpen(false)}
-        onConfigChanged={() => {
-          setIsCloudConnected(isCloudDatabaseConnected())
-          fetchMemories()
-        }}
+        onConfigChanged={handleCloudConfigChanged}
       />
 
     </div>

@@ -1,70 +1,56 @@
-# Momentos Especiales ✨ (Calendario de Recuerdos)
+# Momentos Especiales ✨
 
-Una aplicación web alegre, cálida y minimalista para guardar, revivir y conmemorar los momentos más importantes que ya pasaron: primera cita, aniversarios, viajes, momentos en casa y días especiales con fotos, música y lugares.
+Calendario para guardar recuerdos con fechas, fotos, lugares, notas y música. Aplicación web adaptable a móviles y preparada para instalarse como PWA.
 
----
+## Funciones
 
-## ✨ Características Principales
+- Calendario, línea de tiempo, búsqueda y vista de hitos.
+- Recuerdos con fotos, ubicación, texto y música.
+- Tema claro/oscuro y navegación móvil.
+- Perfiles locales para uso en un solo navegador.
+- Cuentas en la nube con correo y contraseña mediante Supabase Auth.
+- Los datos sincronizados en Supabase están limitados por cuenta mediante Row Level Security (RLS).
+- PWA para añadir a la pantalla de inicio en dispositivos compatibles. No es una aplicación nativa de App Store.
+- Easter egg de Grace: escribe `grace` o haz triple clic en el logo.
 
-* 📅 **Calendario Interactivo & Geométrico:**
-  * Diseño moderno y limpio (no circular, con esquinas sutiles y elegantes).
-  * Vista mensual con navegación rápida entre meses y años.
-  * Días marcados con miniaturas de fotos, corazones `💖` y coronas de hitos `✨`.
-  * Toca cualquier día con recuerdos para abrir su ficha o cualquier día vacío para registrar un nuevo instante.
+## Desarrollo local
 
-* 🎵 **Música & Canciones en tus Recuerdos:**
-  * Asocia la canción especial de ese día (título, artista y enlace a Spotify/YouTube).
-  * Sube archivos de audio directo (`.mp3`, `.wav`, `.m4a`) o notas de voz grabadas.
-  * Mini reproductor integrado con animación de ecualizador al reproducir.
-
-* 📱 **Optimizado para Teléfonos Móviles (PWA):**
-  * Barra de navegación inferior móvil (`BottomNav`) para fácil uso con el pulgar.
-  * Compatible como **PWA**: puedes "Añadir a pantalla de inicio" en iPhone o Android y usarlo como una aplicación nativa a pantalla completa.
-
-* 🌙 **Modo Oscuro Integrado:**
-  * Alterna entre modo claro (tonos crema y durazno cálidos) y modo oscuro (tonos grafito profundo con acentos neón).
-
-* 👤 **Sistema de Cuentas Multi-Usuario:**
-  * Cada persona puede crear su cuenta con nombre, usuario, contraseña opcional y avatar emoji.
-  * Cambia de perfil en el mismo equipo con 1 clic.
-  * Almacenamiento privado e independiente por usuario en **IndexedDB**.
-
-* 🌸 **Easter Egg Secreto:**
-  * Escribe **`grace`** con tu teclado en cualquier momento para ver la dedicatoria secreta.
-  * O haz triple clic rápido en el logo de la marca en la cabecera.
-
----
-
-## 🚀 Publicación y Despliegue
-
-### 1. Subir a GitHub
-```bash
-# Crear repositorio público en tu cuenta de GitHub y subir el código
-gh repo create mmsuarez-oss/calendarioimportante --public --source=. --remote=origin --push
-```
-
-### 2. GitHub Pages (Gratis y Automático)
-El proyecto incluye un workflow en `.github/workflows/deploy.yml`:
-1. Ve a tu repositorio en GitHub: `https://github.com/mmsuarez-oss/calendarioimportante`
-2. Ve a **Settings** > **Pages**.
-3. En **Source**, selecciona **GitHub Actions**.
-4. ¡Listo! Tu aplicación estará publicada automáticamente en `https://mmsuarez-oss.github.io/calendarioimportante/`.
-
-### 3. Vercel (1 Clic)
-1. Entra a [vercel.com](https://vercel.com) e inicia sesión con GitHub.
-2. Importa el repositorio `calendarioimportante`.
-3. Dale a **Deploy** y obtendrás un enlace público `https://calendarioimportante.vercel.app`.
-
----
-
-## 💻 Desarrollo Local
+Requiere Bun y Node.js compatibles con las versiones declaradas en `package.json`.
 
 ```bash
 bun install
-bun dev
-# O con npm:
-# npm install
-# npm run dev
+bun run dev
 ```
 
-Abre `http://localhost:5173`.
+Abre la URL local que muestra Vite. Para compilar y revisar el código:
+
+```bash
+bun run build
+bun run lint
+```
+
+## Supabase
+
+El proyecto no incluye credenciales compartidas ni un backend ya desplegado. Sin configurar Supabase, los perfiles y recuerdos se guardan en el navegador; esos perfiles **no son cuentas protegidas, no se sincronizan y no sirven para cambiar de dispositivo**.
+
+Para habilitar cuentas compartidas:
+
+1. Crea un proyecto Supabase nuevo.
+2. Ejecuta `public/supabase-schema.sql` en el SQL Editor. El esquema configura Supabase Auth, crea el perfil al registrarse y limita los perfiles y recuerdos autenticados mediante RLS.
+3. En Authentication, configura el envío y confirmación de correo, así como las URL permitidas para tu sitio.
+4. En la aplicación, abre la configuración de nube e introduce la URL del proyecto y su clave pública `anon`/publishable.
+5. Prueba registro, confirmación de correo, acceso y aislamiento entre dos cuentas antes de guardar datos reales.
+
+**No ejecutes el esquema sobre la base de datos del prototipo anterior.** Esa versión guardaba contraseñas en `profiles` y usaba políticas públicas. El esquema nuevo detecta sus tablas incompatibles y aborta; no migra los datos antiguos. Respalda y migra cualquier dato existente por separado. Nunca pongas una `service_role` key en la aplicación.
+
+Fotos y audio todavía se guardan en los datos del recuerdo; no se ha configurado Supabase Storage ni un flujo de migración de archivos.
+
+## Despliegue
+
+Hay configuración de compilación para Vercel (`vercel.json`) y Netlify (`netlify.toml`), pero no se ha verificado un sitio de producción. Importa el repositorio `alqv10/calendarioimportante` en uno de esos servicios y confirma el despliegue. Configura las URL de autenticación de Supabase con el dominio final.
+
+GitHub Pages ya no está configurado. No borres otro repositorio ni cambies de proveedor hasta verificar la publicación y la transferencia del historial.
+
+## Documentación del estado
+
+Consulta [`ESTADO_DEL_PROYECTO.md`](ESTADO_DEL_PROYECTO.md) para el estado actual, las limitaciones conocidas y el trabajo pendiente.
