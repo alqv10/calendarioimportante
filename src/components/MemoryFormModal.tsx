@@ -21,6 +21,61 @@ const FEELINGS = [
   { key: 'nostalgico', label: 'Inolvidable', emoji: '🥹' },
 ]
 
+const MAX_PHOTO_SIZE = 20 * 1024 * 1024
+const MAX_PHOTO_DIMENSION = 1920
+
+function compressPhoto(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const objectUrl = URL.createObjectURL(file)
+    const image = new Image()
+
+    image.onload = () => {
+      URL.revokeObjectURL(objectUrl)
+      if (!image.naturalWidth || !image.naturalHeight) {
+        reject(new Error('El archivo no contiene una imagen válida.'))
+        return
+      }
+
+      const scale = Math.min(1, MAX_PHOTO_DIMENSION / Math.max(image.naturalWidth, image.naturalHeight))
+      const canvas = document.createElement('canvas')
+      canvas.width = Math.round(image.naturalWidth * scale)
+      canvas.height = Math.round(image.naturalHeight * scale)
+      const context = canvas.getContext('2d')
+      if (!context) {
+        reject(new Error('El navegador no pudo procesar la imagen.'))
+        return
+      }
+
+      context.fillStyle = '#fff'
+      context.fillRect(0, 0, canvas.width, canvas.height)
+      context.drawImage(image, 0, 0, canvas.width, canvas.height)
+      canvas.toBlob(blob => {
+        if (!blob) {
+          reject(new Error('No se pudo comprimir la imagen.'))
+          return
+        }
+
+        const reader = new FileReader()
+        reader.onload = () => {
+          if (typeof reader.result !== 'string') {
+            reject(new Error('No se pudo leer la imagen procesada.'))
+            return
+          }
+          resolve(reader.result)
+        }
+        reader.onerror = () => reject(new Error('No se pudo leer la imagen procesada.'))
+        reader.readAsDataURL(blob)
+      }, 'image/jpeg', 0.82)
+    }
+
+    image.onerror = () => {
+      URL.revokeObjectURL(objectUrl)
+      reject(new Error('El formato de esta imagen no es compatible con el navegador.'))
+    }
+    image.src = objectUrl
+  })
+}
+
 export const MemoryFormModal: React.FC<MemoryFormModalProps> = ({
   isOpen,
   onClose,
@@ -84,33 +139,46 @@ export const MemoryFormModal: React.FC<MemoryFormModalProps> = ({
 
   if (!isOpen) return null
 
-  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files
-    if (!files || files.length === 0) return
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const input = e.currentTarget
+    const files = Array.from(input.files || [])
+    if (files.length === 0) return
 
     setIsUploadingPhotos(true)
+    setSaveError('')
     const newPhotos: MemoryPhoto[] = []
-    let processed = 0
+    const failedFiles: string[] = []
 
-    Array.from(files).forEach((file) => {
-      const reader = new FileReader()
-      reader.onload = (event) => {
-        const url = event.target?.result as string
+    for (const file of files) {
+      try {
+        if (!file.type.startsWith('image/')) {
+          throw new Error('El archivo no es una imagen.')
+        }
+        if (file.size > MAX_PHOTO_SIZE) {
+          throw new Error('La imagen supera el límite de 20 MB.')
+        }
+
+        const url = await compressPhoto(file)
         newPhotos.push({
           id: `photo-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
           url,
           caption: ''
         })
-        processed++
-        if (processed === files.length) {
-          setPhotos(prev => [...prev, ...newPhotos])
-          setIsUploadingPhotos(false)
-        }
+      } catch (error) {
+        const reason = error instanceof Error ? error.message : 'No se pudo procesar.'
+        failedFiles.push(`${file.name}: ${reason}`)
       }
-      reader.readAsDataURL(file)
-    })
+    }
 
-    e.target.value = ''
+    try {
+      setPhotos(prev => [...prev, ...newPhotos])
+      if (failedFiles.length) {
+        setSaveError(`No se pudieron cargar algunas fotos: ${failedFiles.join(' ')}`)
+      }
+    } finally {
+      setIsUploadingPhotos(false)
+      input.value = ''
+    }
   }
 
   const handleAudioUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -138,6 +206,7 @@ export const MemoryFormModal: React.FC<MemoryFormModalProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (isUploadingPhotos) return
     setSaveError('')
     if (!title.trim() || !date) {
       alert('Por favor escribe un título y selecciona la fecha.')
@@ -418,10 +487,22 @@ export const MemoryFormModal: React.FC<MemoryFormModalProps> = ({
               ))}
 
               <div
-                onClick={() => fileInputRef.current?.click()}
+                role="button"
+                tabIndex={0}
+                aria-label={isUploadingPhotos ? 'Cargando fotos' : 'Subir fotos'}
+                aria-disabled={isUploadingPhotos}
+                onClick={() => {
+                  if (!isUploadingPhotos) fileInputRef.current?.click()
+                }}
+                onKeyDown={event => {
+                  if (!isUploadingPhotos && (event.key === 'Enter' || event.key === ' ')) {
+                    event.preventDefault()
+                    fileInputRef.current?.click()
+                  }
+                }}
                 className="aspect-square rounded-xl border-2 border-dashed border-stone-200 dark:border-stone-700 hover:border-rose-400 dark:hover:border-rose-500 bg-stone-50 dark:bg-stone-900 hover:bg-rose-50/50 dark:hover:bg-rose-950/30 flex flex-col items-center justify-center p-2 text-center cursor-pointer transition-colors"
               >
-                <Upload className="w-5 h-5 text-stone-400 group-hover:text-rose-500 mb-1" />
+                <Upload className="w-5 h-5 text-stone-400 mb-1" />
                 <span className="text-[11px] font-semibold text-stone-500 dark:text-stone-400">
                   {isUploadingPhotos ? 'Cargando...' : '+ Subir foto'}
                 </span>
@@ -432,10 +513,16 @@ export const MemoryFormModal: React.FC<MemoryFormModalProps> = ({
               type="file"
               ref={fileInputRef}
               onChange={handlePhotoUpload}
+              disabled={isUploadingPhotos}
               multiple
               accept="image/*"
               className="hidden"
             />
+            {isUploadingPhotos && (
+              <p role="status" className="text-xs text-stone-500 dark:text-stone-400">
+                Procesando fotos… No cierres este formulario todavía.
+              </p>
+            )}
           </div>
 
           {/* Milestone Checkbox */}
@@ -471,10 +558,11 @@ export const MemoryFormModal: React.FC<MemoryFormModalProps> = ({
             </button>
             <button
               type="submit"
-              className="px-5 py-2 rounded-xl bg-gradient-to-r from-rose-500 to-amber-500 hover:from-rose-600 hover:to-amber-600 text-white font-bold text-xs sm:text-sm shadow-md shadow-rose-500/25 transition-all transform hover:-translate-y-0.5 cursor-pointer flex items-center gap-2"
+              disabled={isUploadingPhotos}
+              className="px-5 py-2 rounded-xl bg-gradient-to-r from-rose-500 to-amber-500 hover:from-rose-600 hover:to-amber-600 text-white font-bold text-xs sm:text-sm shadow-md shadow-rose-500/25 transition-all transform hover:-translate-y-0.5 cursor-pointer flex items-center gap-2 disabled:opacity-50 disabled:cursor-wait"
             >
               <Heart className="w-4 h-4 fill-white" />
-              <span>Guardar Recuerdo</span>
+              <span>{isUploadingPhotos ? 'Procesando fotos…' : 'Guardar Recuerdo'}</span>
             </button>
           </div>
 
