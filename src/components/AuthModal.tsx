@@ -3,12 +3,16 @@ import { X, UserPlus, LogIn, Heart, Lock, User, Sparkles } from 'lucide-react'
 import type { UserProfile } from '../types'
 import { getAllUsersLocal, loginUser, registerUser } from '../services/auth'
 import { triggerJoyfulConfetti } from '../services/confetti'
+import { isCloudDatabaseConnected } from '../services/supabase'
+
+function getErrorMessage(error: unknown, fallback: string): string {
+  return error instanceof Error ? error.message : fallback
+}
 
 interface AuthModalProps {
   isOpen: boolean
   onClose: () => void
   onSuccess: (user: UserProfile) => void
-  isMandatory?: boolean
 }
 
 const EMOJI_OPTIONS = ['💖', '🌹', '✨', '☕', '🐱', '💫', '🌟', '🍕', '💍', '🚀']
@@ -16,8 +20,7 @@ const EMOJI_OPTIONS = ['💖', '🌹', '✨', '☕', '🐱', '💫', '🌟', '�
 export const AuthModal: React.FC<AuthModalProps> = ({
   isOpen,
   onClose,
-  onSuccess,
-  isMandatory = false
+  onSuccess
 }) => {
   const [tab, setTab] = useState<'login' | 'register'>('login')
   
@@ -28,61 +31,82 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   // Register fields
   const [regName, setRegName] = useState('')
   const [regUsername, setRegUsername] = useState('')
+  const [regEmail, setRegEmail] = useState('')
   const [regPassword, setRegPassword] = useState('')
   const [partnerName, setPartnerName] = useState('Grace')
   const [avatarEmoji, setAvatarEmoji] = useState('💖')
 
   const [errorMsg, setErrorMsg] = useState('')
+  const [statusMsg, setStatusMsg] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   if (!isOpen) return null
 
-  const existingUsers = getAllUsersLocal()
+  const isCloudMode = isCloudDatabaseConnected()
+  const existingUsers = isCloudMode ? [] : getAllUsersLocal()
 
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setErrorMsg('')
+    setStatusMsg('')
+    setIsSubmitting(true)
     try {
       const user = await loginUser(loginUsername, loginPassword)
       triggerJoyfulConfetti()
       onSuccess(user)
       onClose()
-    } catch (err: any) {
-      setErrorMsg(err.message || 'Error al iniciar sesión')
+    } catch (error) {
+      setErrorMsg(getErrorMessage(error, 'Error al iniciar sesión'))
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
   const handleRegisterSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setErrorMsg('')
+    setStatusMsg('')
     if (!regName.trim() || !regUsername.trim()) {
       setErrorMsg('Por favor escribe tu nombre y un nombre de usuario.')
       return
     }
+    if (isCloudMode && (!regEmail.trim() || regPassword.length < 8)) {
+      setErrorMsg('Ingresa un correo y una contraseña de al menos 8 caracteres.')
+      return
+    }
 
+    setIsSubmitting(true)
     try {
-      const newUser = await registerUser(
+      const result = await registerUser(
         regName,
         regUsername,
-        regPassword,
         partnerName,
-        avatarEmoji
+        avatarEmoji,
+        isCloudMode ? regEmail : undefined,
+        isCloudMode ? regPassword : undefined
       )
+      if (!result.user) {
+        setStatusMsg(result.message || 'Confirma tu cuenta desde el correo que te enviamos.')
+        return
+      }
       triggerJoyfulConfetti()
-      onSuccess(newUser)
+      onSuccess(result.user)
       onClose()
-    } catch (err: any) {
-      setErrorMsg(err.message || 'Error al registrar cuenta')
+    } catch (error) {
+      setErrorMsg(getErrorMessage(error, 'Error al registrar cuenta'))
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
   const handleQuickSwitch = async (u: UserProfile) => {
     try {
-      const logged = await loginUser(u.username, u.password)
+      const logged = await loginUser(u.username)
       triggerJoyfulConfetti()
       onSuccess(logged)
       onClose()
-    } catch (err: any) {
-      setErrorMsg(err.message)
+    } catch (error) {
+      setErrorMsg(getErrorMessage(error, 'Error al cambiar de perfil'))
     }
   }
 
@@ -92,14 +116,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         
         {/* Header */}
         <div className="relative bg-gradient-to-r from-rose-500 via-rose-600 to-amber-500 p-6 text-white">
-          {!isMandatory && (
-            <button
-              onClick={onClose}
-              className="absolute top-4 right-4 p-1.5 rounded-lg hover:bg-white/20 transition-colors cursor-pointer"
-            >
-              <X className="w-5 h-5 text-white" />
-            </button>
-          )}
+          <button
+            onClick={onClose}
+            className="absolute top-4 right-4 p-1.5 rounded-lg hover:bg-white/20 transition-colors cursor-pointer"
+          >
+            <X className="w-5 h-5 text-white" />
+          </button>
 
           <div className="flex items-center gap-2.5 mb-1">
             <div className="w-9 h-9 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center font-bold">
@@ -150,6 +172,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               {errorMsg}
             </div>
           )}
+          {statusMsg && (
+            <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-900/60 text-xs font-semibold text-emerald-700 dark:text-emerald-300">
+              {statusMsg}
+            </div>
+          )}
 
           {/* Login Form */}
           {tab === 'login' ? (
@@ -157,38 +184,43 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               <div>
                 <label className="block text-xs font-bold text-stone-700 dark:text-stone-300 uppercase tracking-wider mb-1.5 flex items-center gap-1">
                   <User className="w-3.5 h-3.5 text-rose-500" />
-                  Usuario
+                  {isCloudMode ? 'Correo electrónico' : 'Perfil de este equipo'}
                 </label>
                 <input
-                  type="text"
+                  type={isCloudMode ? 'email' : 'text'}
                   required
                   value={loginUsername}
                   onChange={e => setLoginUsername(e.target.value)}
-                  placeholder="Tu nombre de usuario"
+                  placeholder={isCloudMode ? 'tu@correo.com' : 'Tu nombre de usuario'}
                   className="w-full px-3.5 py-2.5 rounded-xl border border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-stone-900/50 text-stone-900 dark:text-stone-100 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400"
                 />
               </div>
 
-              <div>
-                <label className="block text-xs font-bold text-stone-700 dark:text-stone-300 uppercase tracking-wider mb-1.5 flex items-center gap-1">
-                  <Lock className="w-3.5 h-3.5 text-rose-500" />
-                  Contraseña (opcional)
-                </label>
-                <input
-                  type="password"
-                  value={loginPassword}
-                  onChange={e => setLoginPassword(e.target.value)}
-                  placeholder="Escribe tu contraseña si configuraste una"
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-stone-900/50 text-stone-900 dark:text-stone-100 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400"
-                />
-              </div>
+              {isCloudMode && (
+                <div>
+                  <label className="block text-xs font-bold text-stone-700 dark:text-stone-300 uppercase tracking-wider mb-1.5 flex items-center gap-1">
+                    <Lock className="w-3.5 h-3.5 text-rose-500" />
+                    Contraseña
+                  </label>
+                  <input
+                    type="password"
+                    required
+                    value={loginPassword}
+                    onChange={e => setLoginPassword(e.target.value)}
+                    autoComplete="current-password"
+                    placeholder="Tu contraseña"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-stone-900/50 text-stone-900 dark:text-stone-100 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400"
+                  />
+                </div>
+              )}
 
               <button
                 type="submit"
+                disabled={isSubmitting}
                 className="w-full py-2.5 rounded-xl bg-gradient-to-r from-rose-500 to-amber-500 hover:from-rose-600 hover:to-amber-600 text-white font-bold text-sm shadow-md shadow-rose-500/20 transition-all cursor-pointer flex items-center justify-center gap-2"
               >
                 <LogIn className="w-4 h-4" />
-                <span>Entrar a mis recuerdos</span>
+                <span>{isSubmitting ? 'Conectando...' : 'Entrar a mis recuerdos'}</span>
               </button>
 
               {/* Existing accounts quick select */}
@@ -213,11 +245,16 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   </div>
                 </div>
               )}
+              {!isCloudMode && (
+                <p className="text-[11px] leading-relaxed text-stone-500 dark:text-stone-400">
+                  Los perfiles locales solo organizan recuerdos en este navegador; no son cuentas protegidas ni se sincronizan entre dispositivos.
+                </p>
+              )}
             </form>
           ) : (
             /* Register Form */
             <form onSubmit={handleRegisterSubmit} className="space-y-3.5">
-              <div className="grid grid-cols-2 gap-3">
+              <div>
                 <div>
                   <label className="block text-xs font-bold text-stone-700 dark:text-stone-300 uppercase tracking-wider mb-1">
                     Tu Nombre *
@@ -231,21 +268,57 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     className="w-full px-3 py-2 rounded-xl border border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-stone-900/50 text-stone-900 dark:text-stone-100 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400"
                   />
                 </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-stone-700 dark:text-stone-300 uppercase tracking-wider mb-1">
-                    Usuario *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={regUsername}
-                    onChange={e => setRegUsername(e.target.value)}
-                    placeholder="ej. matheo"
-                    className="w-full px-3 py-2 rounded-xl border border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-stone-900/50 text-stone-900 dark:text-stone-100 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400"
-                  />
-                </div>
               </div>
+
+              {isCloudMode && (
+                <>
+                  <div>
+                    <label className="block text-xs font-bold text-stone-700 dark:text-stone-300 uppercase tracking-wider mb-1">
+                      Usuario *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      minLength={3}
+                      maxLength={30}
+                      pattern="[a-zA-Z0-9_]+"
+                      value={regUsername}
+                      onChange={e => setRegUsername(e.target.value)}
+                      placeholder="ej. matheo"
+                      className="w-full px-3 py-2 rounded-xl border border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-stone-900/50 text-stone-900 dark:text-stone-100 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-stone-700 dark:text-stone-300 uppercase tracking-wider mb-1">
+                      Correo electrónico *
+                    </label>
+                    <input
+                      type="email"
+                      required
+                      value={regEmail}
+                      onChange={e => setRegEmail(e.target.value)}
+                      autoComplete="email"
+                      placeholder="tu@correo.com"
+                      className="w-full px-3 py-2 rounded-xl border border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-stone-900/50 text-stone-900 dark:text-stone-100 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-stone-700 dark:text-stone-300 uppercase tracking-wider mb-1">
+                      Contraseña (mínimo 8 caracteres) *
+                    </label>
+                    <input
+                      type="password"
+                      required
+                      minLength={8}
+                      value={regPassword}
+                      onChange={e => setRegPassword(e.target.value)}
+                      autoComplete="new-password"
+                      placeholder="Crea una contraseña"
+                      className="w-full px-3 py-2 rounded-xl border border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-stone-900/50 text-stone-900 dark:text-stone-100 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400"
+                    />
+                  </div>
+                </>
+              )}
 
               <div>
                 <label className="block text-xs font-bold text-stone-700 dark:text-stone-300 uppercase tracking-wider mb-1 flex items-center gap-1">
@@ -261,18 +334,29 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 />
               </div>
 
-              <div>
-                <label className="block text-xs font-bold text-stone-700 dark:text-stone-300 uppercase tracking-wider mb-1">
-                  Contraseña (opcional)
-                </label>
-                <input
-                  type="password"
-                  value={regPassword}
-                  onChange={e => setRegPassword(e.target.value)}
-                  placeholder="Puedes dejarlo vacío para entrar rápido"
-                  className="w-full px-3.5 py-2 rounded-xl border border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-stone-900/50 text-stone-900 dark:text-stone-100 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400"
-                />
-              </div>
+              {!isCloudMode && (
+                <>
+                  <div>
+                    <label className="block text-xs font-bold text-stone-700 dark:text-stone-300 uppercase tracking-wider mb-1">
+                      Usuario *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      minLength={3}
+                      maxLength={30}
+                      pattern="[a-zA-Z0-9_]+"
+                      value={regUsername}
+                      onChange={e => setRegUsername(e.target.value)}
+                      placeholder="ej. matheo"
+                      className="w-full px-3 py-2 rounded-xl border border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-stone-900/50 text-stone-900 dark:text-stone-100 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400"
+                    />
+                  </div>
+                  <p className="text-[11px] leading-relaxed text-stone-500 dark:text-stone-400">
+                    Este perfil no tiene contraseña ni protege tus datos; se guarda solo en este navegador.
+                  </p>
+                </>
+              )}
 
               {/* Avatar Emoji */}
               <div>
@@ -299,10 +383,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
               <button
                 type="submit"
+                disabled={isSubmitting}
                 className="w-full py-2.5 rounded-xl bg-gradient-to-r from-rose-500 to-amber-500 hover:from-rose-600 hover:to-amber-600 text-white font-bold text-sm shadow-md shadow-rose-500/20 transition-all cursor-pointer flex items-center justify-center gap-2 pt-2.5"
               >
                 <Sparkles className="w-4 h-4" />
-                <span>Crear Cuenta y Comenzar</span>
+                <span>{isSubmitting ? 'Creando...' : 'Crear Cuenta y Comenzar'}</span>
               </button>
             </form>
           )}

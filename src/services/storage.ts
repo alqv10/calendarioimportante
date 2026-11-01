@@ -95,44 +95,42 @@ export const INITIAL_MEMORIES: MemoryMoment[] = [
 ]
 
 export async function getAllMemories(userId?: string): Promise<MemoryMoment[]> {
-  // 1. Try Supabase cloud first if connected
   const supabase = getSupabaseClient()
   if (supabase) {
-    try {
-      let query = supabase.from('memories').select('*')
-      if (userId) {
-        query = query.or(`user_id.eq.${userId},user_id.is.null`)
-      }
-      const { data, error } = await query.order('date', { ascending: false })
-
-      if (!error && data && data.length > 0) {
-        const cloudMemories: MemoryMoment[] = data.map(item => ({
-          id: item.id,
-          userId: item.user_id,
-          title: item.title,
-          date: item.date,
-          category: item.category,
-          emoji: item.emoji,
-          description: item.description,
-          location: item.location,
-          feeling: item.feeling,
-          isMilestone: item.is_milestone,
-          songTitle: item.song_title,
-          songArtist: item.song_artist,
-          songUrl: item.song_url,
-          photos: item.photos || [],
-          audioData: item.audio_data,
-          createdAt: item.created_at,
-          updatedAt: item.updated_at
-        }))
-        return cloudMemories
-      }
-    } catch (err) {
-      console.warn('Supabase fetch error, fallback to IndexedDB', err)
+    const { data: authData, error: authError } = await supabase.auth.getUser()
+    if (authError) throw new Error(`No se pudo validar la sesión: ${authError.message}`)
+    if (!authData.user) throw new Error('Inicia sesión para consultar tus recuerdos en la nube.')
+    if (userId && userId !== authData.user.id) {
+      throw new Error('La sesión no coincide con el perfil seleccionado.')
     }
+
+    const { data, error } = await supabase
+      .from('memories')
+      .select('*')
+      .order('date', { ascending: false })
+    if (error) throw new Error(`No se pudieron cargar los recuerdos: ${error.message}`)
+
+    return (data || []).map(item => ({
+      id: item.id,
+      userId: item.user_id,
+      title: item.title,
+      date: item.date,
+      category: item.category,
+      emoji: item.emoji,
+      description: item.description,
+      location: item.location,
+      feeling: item.feeling,
+      isMilestone: item.is_milestone,
+      songTitle: item.song_title,
+      songArtist: item.song_artist,
+      songUrl: item.song_url,
+      photos: item.photos || [],
+      audioData: item.audio_data,
+      createdAt: item.created_at,
+      updatedAt: item.updated_at
+    }))
   }
 
-  // 2. Local IndexedDB fallback
   try {
     const db = await openDB()
     return new Promise((resolve) => {
@@ -204,35 +202,38 @@ export async function saveMemory(moment: MemoryMoment, userId?: string): Promise
     userId: moment.userId || userId
   }
 
-  // 1. Supabase Cloud Sync
   const supabase = getSupabaseClient()
   if (supabase) {
-    try {
-      await supabase.from('memories').upsert({
-        id: itemToSave.id,
-        user_id: itemToSave.userId || null,
-        title: itemToSave.title,
-        date: itemToSave.date,
-        category: itemToSave.category,
-        emoji: itemToSave.emoji,
-        description: itemToSave.description,
-        location: itemToSave.location || null,
-        feeling: itemToSave.feeling || null,
-        is_milestone: !!itemToSave.isMilestone,
-        song_title: itemToSave.songTitle || null,
-        song_artist: itemToSave.songArtist || null,
-        song_url: itemToSave.songUrl || null,
-        photos: itemToSave.photos || [],
-        audio_data: itemToSave.audioData || null,
-        created_at: itemToSave.createdAt,
-        updated_at: itemToSave.updatedAt
-      })
-    } catch (err) {
-      console.warn('Supabase upsert error', err)
+    const { data: authData, error: authError } = await supabase.auth.getUser()
+    if (authError) throw new Error(`No se pudo validar la sesión: ${authError.message}`)
+    if (!authData.user) throw new Error('Inicia sesión para guardar recuerdos en la nube.')
+    if (itemToSave.userId && itemToSave.userId !== authData.user.id) {
+      throw new Error('No puedes guardar recuerdos en el perfil de otra cuenta.')
     }
+
+    const { error } = await supabase.from('memories').upsert({
+      id: itemToSave.id,
+      user_id: authData.user.id,
+      title: itemToSave.title,
+      date: itemToSave.date,
+      category: itemToSave.category,
+      emoji: itemToSave.emoji,
+      description: itemToSave.description,
+      location: itemToSave.location || null,
+      feeling: itemToSave.feeling || null,
+      is_milestone: !!itemToSave.isMilestone,
+      song_title: itemToSave.songTitle || null,
+      song_artist: itemToSave.songArtist || null,
+      song_url: itemToSave.songUrl || null,
+      photos: itemToSave.photos || [],
+      audio_data: itemToSave.audioData || null,
+      created_at: itemToSave.createdAt,
+      updated_at: itemToSave.updatedAt
+    })
+    if (error) throw new Error(`No se pudo guardar el recuerdo: ${error.message}`)
+    return
   }
 
-  // 2. Local IndexedDB Cache
   try {
     const db = await openDB()
     return new Promise((resolve, reject) => {
@@ -261,11 +262,13 @@ export async function saveMemory(moment: MemoryMoment, userId?: string): Promise
 export async function deleteMemory(id: string): Promise<void> {
   const supabase = getSupabaseClient()
   if (supabase) {
-    try {
-      await supabase.from('memories').delete().eq('id', id)
-    } catch (err) {
-      console.warn('Supabase delete error', err)
-    }
+    const { data: authData, error: authError } = await supabase.auth.getUser()
+    if (authError) throw new Error(`No se pudo validar la sesión: ${authError.message}`)
+    if (!authData.user) throw new Error('Inicia sesión para borrar recuerdos en la nube.')
+
+    const { error } = await supabase.from('memories').delete().eq('id', id)
+    if (error) throw new Error(`No se pudo borrar el recuerdo: ${error.message}`)
+    return
   }
 
   try {
@@ -296,18 +299,42 @@ export async function exportMemoriesJSON(userId?: string): Promise<string> {
 }
 
 export async function importMemoriesJSON(jsonString: string, userId?: string): Promise<number> {
+  let parsed: unknown
   try {
-    const parsed = JSON.parse(jsonString)
-    const items: MemoryMoment[] = Array.isArray(parsed) ? parsed : (parsed.memories || [])
-    if (!Array.isArray(items)) throw new Error('Formato inválido')
-
-    for (const item of items) {
-      if (item.id && item.title && item.date) {
-        await saveMemory({ ...item, userId: userId || item.userId }, userId)
-      }
-    }
-    return items.length
+    parsed = JSON.parse(jsonString)
   } catch {
     throw new Error('El archivo no tiene un formato válido de recuerdos.')
   }
+
+  const items = Array.isArray(parsed)
+    ? parsed
+    : parsed && typeof parsed === 'object' && 'memories' in parsed
+      ? parsed.memories
+      : null
+  if (!Array.isArray(items)) {
+    throw new Error('El archivo no tiene un formato válido de recuerdos.')
+  }
+
+  const validItems = items.filter((item): item is MemoryMoment =>
+    !!item &&
+    typeof item === 'object' &&
+    'id' in item && typeof item.id === 'string' &&
+    'title' in item && typeof item.title === 'string' &&
+    'date' in item && typeof item.date === 'string'
+  )
+  if (validItems.length !== items.length) {
+    throw new Error('El archivo contiene recuerdos con datos incompletos.')
+  }
+
+  let imported = 0
+  for (const item of validItems) {
+    try {
+      await saveMemory({ ...item, userId: userId || item.userId }, userId)
+      imported++
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'error desconocido'
+      throw new Error(`Se importaron ${imported} recuerdos antes de un error: ${message}`)
+    }
+  }
+  return imported
 }

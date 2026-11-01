@@ -7,7 +7,7 @@ import type { MemoryMoment, CategoryType, MemoryPhoto } from '../types'
 interface MemoryFormModalProps {
   isOpen: boolean
   onClose: () => void
-  onSave: (moment: MemoryMoment) => void
+  onSave: (moment: MemoryMoment) => void | Promise<void>
   initialDate?: string
   initialData?: MemoryMoment | null
 }
@@ -37,6 +37,7 @@ export const MemoryFormModal: React.FC<MemoryFormModalProps> = ({
   const [isMilestone, setIsMilestone] = useState(false)
   const [photos, setPhotos] = useState<MemoryPhoto[]>([])
   const [isUploadingPhotos, setIsUploadingPhotos] = useState(false)
+  const [saveError, setSaveError] = useState('')
 
   // Music state
   const [songTitle, setSongTitle] = useState('')
@@ -135,8 +136,9 @@ export const MemoryFormModal: React.FC<MemoryFormModalProps> = ({
     setPhotos(prev => prev.filter(p => p.id !== id))
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setSaveError('')
     if (!title.trim() || !date) {
       alert('Por favor escribe un título y selecciona la fecha.')
       return
@@ -163,8 +165,12 @@ export const MemoryFormModal: React.FC<MemoryFormModalProps> = ({
       updatedAt: Date.now()
     }
 
-    onSave(moment)
-    onClose()
+    try {
+      await onSave(moment)
+      onClose()
+    } catch (error) {
+      setSaveError(error instanceof Error ? error.message : 'No se pudo guardar el recuerdo.')
+    }
   }
 
   return (
@@ -194,6 +200,11 @@ export const MemoryFormModal: React.FC<MemoryFormModalProps> = ({
 
         {/* Form Body */}
         <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-4 sm:space-y-5 max-h-[78vh] overflow-y-auto">
+          {saveError && (
+            <div role="alert" className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800 dark:border-rose-900 dark:bg-rose-950/50 dark:text-rose-200">
+              {saveError}
+            </div>
+          )}
           
           {/* Title & Date */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">

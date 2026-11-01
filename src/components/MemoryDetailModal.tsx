@@ -10,7 +10,7 @@ interface MemoryDetailModalProps {
   moment: MemoryMoment | null
   onClose: () => void
   onEdit: (moment: MemoryMoment) => void
-  onDelete: (id: string) => void
+  onDelete: (id: string) => void | Promise<void>
 }
 
 export const MemoryDetailModal: React.FC<MemoryDetailModalProps> = ({
@@ -20,6 +20,7 @@ export const MemoryDetailModal: React.FC<MemoryDetailModalProps> = ({
   onDelete
 }) => {
   const [activePhotoIdx, setActivePhotoIdx] = useState(0)
+  const [deleteError, setDeleteError] = useState('')
 
   if (!moment) return null
 
@@ -33,10 +34,15 @@ export const MemoryDetailModal: React.FC<MemoryDetailModalProps> = ({
     triggerAnniversaryExplosion()
   }
 
-  const handleDeleteConfirm = () => {
+  const handleDeleteConfirm = async () => {
     if (window.confirm('¿Seguro que deseas eliminar este recuerdo?')) {
-      onDelete(moment.id)
-      onClose()
+      setDeleteError('')
+      try {
+        await onDelete(moment.id)
+        onClose()
+      } catch (error) {
+        setDeleteError(error instanceof Error ? error.message : 'No se pudo borrar el recuerdo.')
+      }
     }
   }
 
@@ -139,6 +145,11 @@ export const MemoryDetailModal: React.FC<MemoryDetailModalProps> = ({
 
         {/* Modal Body */}
         <div className="p-4 sm:p-6 space-y-4 max-h-[60vh] overflow-y-auto">
+          {deleteError && (
+            <div role="alert" className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800 dark:border-rose-900 dark:bg-rose-950/50 dark:text-rose-200">
+              {deleteError}
+            </div>
+          )}
           
           {/* Metadata Row: Date & Time Ago */}
           <div className="flex flex-wrap items-center justify-between gap-2 p-3 bg-rose-50/50 dark:bg-rose-950/30 rounded-xl border border-rose-100 dark:border-rose-900/40">
