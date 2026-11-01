@@ -9,6 +9,7 @@ import { DayMomentsModal } from './components/DayMomentsModal'
 import { AuthModal } from './components/AuthModal'
 import { GraceEasterEggModal } from './components/GraceEasterEggModal'
 import { CloudConfigModal } from './components/CloudConfigModal'
+import { CalendarPairingModal } from './components/CalendarPairingModal'
 import { BottomNav } from './components/BottomNav'
 import type { MemoryMoment, ViewMode, UserProfile } from './types'
 import { getAllMemories, saveMemory, deleteMemory } from './services/storage'
@@ -41,6 +42,8 @@ export function App() {
   const [selectedMoment, setSelectedMoment] = useState<MemoryMoment | null>(null)
   const [dayModalDate, setDayModalDate] = useState<string | null>(null)
   const [isAuthOpen, setIsAuthOpen] = useState(false)
+  const [isCalendarPairingOpen, setIsCalendarPairingOpen] = useState(false)
+  const [calendarPairingModalInstance, setCalendarPairingModalInstance] = useState(0)
   const [isGraceEasterEggOpen, setIsGraceEasterEggOpen] = useState(false)
   const [isCloudConfigOpen, setIsCloudConfigOpen] = useState(false)
   const [isCloudConnected, setIsCloudConnected] = useState(() => isCloudDatabaseConnected())
@@ -126,6 +129,12 @@ export function App() {
   }, [])
 
   const handleSaveMemory = async (moment: MemoryMoment) => {
+    if (
+      isCloudDatabaseConnected() &&
+      (!currentUser || (moment.userId && moment.userId !== currentUser.id))
+    ) {
+      throw new Error('Solo puedes guardar recuerdos en tu propia cuenta.')
+    }
     await saveMemory(moment, currentUser?.id)
     await fetchMemories()
     if (selectedMoment?.id === moment.id) {
@@ -134,6 +143,12 @@ export function App() {
   }
 
   const handleDeleteMemory = async (id: string) => {
+    if (isCloudDatabaseConnected()) {
+      const memory = memories.find(moment => moment.id === id)
+      if (!currentUser || !memory || memory.userId !== currentUser.id) {
+        throw new Error('Solo puedes borrar recuerdos de tu propia cuenta.')
+      }
+    }
     await deleteMemory(id)
     await fetchMemories()
   }
@@ -212,6 +227,10 @@ export function App() {
         onToggleDarkMode={toggleDarkMode}
         onOpenGraceEasterEgg={() => setIsGraceEasterEggOpen(true)}
         onOpenCloudConfig={() => setIsCloudConfigOpen(true)}
+        onOpenCalendarPairing={() => {
+          setCalendarPairingModalInstance(instance => instance + 1)
+          setIsCalendarPairingOpen(true)
+        }}
         isCloudConnected={isCloudConnected}
       />
 
@@ -239,6 +258,7 @@ export function App() {
             {currentView === 'calendar' && (
               <CalendarView
                 memories={memories}
+                currentUserId={currentUser?.id}
                 onSelectDate={handleSelectDate}
                 onSelectMoment={setSelectedMoment}
                 onAddMomentForDate={handleOpenNewForm}
@@ -308,6 +328,10 @@ export function App() {
         onClose={() => setSelectedMoment(null)}
         onEdit={handleStartEdit}
         onDelete={handleDeleteMemory}
+        canEdit={
+          !isCloudConnected ||
+          (!!currentUser && selectedMoment?.userId === currentUser.id)
+        }
       />
 
       <DayMomentsModal
@@ -315,6 +339,7 @@ export function App() {
         onClose={() => setDayModalDate(null)}
         dateStr={dayModalDate || ''}
         moments={dayMoments}
+        currentUserId={currentUser?.id}
         onSelectMoment={setSelectedMoment}
         onAddNew={handleOpenNewForm}
       />
@@ -323,6 +348,14 @@ export function App() {
         isOpen={isAuthOpen}
         onClose={() => setIsAuthOpen(false)}
         onSuccess={handleAuthSuccess}
+      />
+
+      <CalendarPairingModal
+        key={calendarPairingModalInstance}
+        isOpen={isCalendarPairingOpen}
+        currentUser={currentUser}
+        onClose={() => setIsCalendarPairingOpen(false)}
+        onPairingChanged={() => { void fetchMemories() }}
       />
 
       <GraceEasterEggModal

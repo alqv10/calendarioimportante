@@ -11,13 +11,15 @@ interface MemoryDetailModalProps {
   onClose: () => void
   onEdit: (moment: MemoryMoment) => void
   onDelete: (id: string) => void | Promise<void>
+  canEdit: boolean
 }
 
 export const MemoryDetailModal: React.FC<MemoryDetailModalProps> = ({
   moment,
   onClose,
   onEdit,
-  onDelete
+  onDelete,
+  canEdit
 }) => {
   const [activePhotoIdx, setActivePhotoIdx] = useState(0)
   const [deleteError, setDeleteError] = useState('')
@@ -150,6 +152,11 @@ export const MemoryDetailModal: React.FC<MemoryDetailModalProps> = ({
               {deleteError}
             </div>
           )}
+          {!canEdit && (
+            <div className="rounded-xl border border-sky-200 bg-sky-50 p-3 text-sm text-sky-800 dark:border-sky-900 dark:bg-sky-950/40 dark:text-sky-200">
+              Recuerdo compartido: puedes verlo, pero solo su creador puede editarlo o borrarlo.
+            </div>
+          )}
           
           {/* Metadata Row: Date & Time Ago */}
           <div className="flex flex-wrap items-center justify-between gap-2 p-3 bg-rose-50/50 dark:bg-rose-950/30 rounded-xl border border-rose-100 dark:border-rose-900/40">
@@ -217,26 +224,28 @@ export const MemoryDetailModal: React.FC<MemoryDetailModalProps> = ({
           </div>
 
           {/* Actions: Edit & Delete */}
-          <div className="pt-3 border-t border-stone-200 dark:border-stone-800 flex items-center justify-between">
-            <button
-              onClick={handleDeleteConfirm}
-              className="flex items-center gap-1 text-xs font-semibold text-rose-500 hover:text-rose-700 dark:hover:text-rose-400 p-2 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
-            >
-              <Trash2 className="w-4 h-4" />
-              <span>Eliminar recuerdo</span>
-            </button>
+          {canEdit && (
+            <div className="pt-3 border-t border-stone-200 dark:border-stone-800 flex items-center justify-between">
+              <button
+                onClick={handleDeleteConfirm}
+                className="flex items-center gap-1 text-xs font-semibold text-rose-500 hover:text-rose-700 dark:hover:text-rose-400 p-2 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
+              >
+                <Trash2 className="w-4 h-4" />
+                <span>Eliminar recuerdo</span>
+              </button>
 
-            <button
-              onClick={() => {
-                onEdit(moment)
-                onClose()
-              }}
-              className="flex items-center gap-1.5 text-xs font-bold text-stone-800 dark:text-stone-200 bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 px-4 py-2 rounded-xl transition-colors cursor-pointer"
-            >
-              <Edit3 className="w-4 h-4 text-stone-600 dark:text-stone-400" />
-              <span>Editar</span>
-            </button>
-          </div>
+              <button
+                onClick={() => {
+                  onEdit(moment)
+                  onClose()
+                }}
+                className="flex items-center gap-1.5 text-xs font-bold text-stone-800 dark:text-stone-200 bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 px-4 py-2 rounded-xl transition-colors cursor-pointer"
+              >
+                <Edit3 className="w-4 h-4 text-stone-600 dark:text-stone-400" />
+                <span>Editar</span>
+              </button>
+            </div>
+          )}
 
         </div>
 
