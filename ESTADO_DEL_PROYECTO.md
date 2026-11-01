@@ -24,6 +24,7 @@ Actualizado: 2026-10-31
 - La rama estaba sincronizada con `origin/master` al preparar este informe.
 - Los cambios de limpieza y compatibilidad móvil/iOS estaban preparados en staging; esta entrega los agrupa con este informe para confirmarlos juntos.
 - Vercel y Netlify tienen archivos de configuración, pero no hay una URL de producción ni un despliegue verificado en este estado.
+- No se lanzó un despliegue: este checkout no está vinculado a un proyecto de Vercel y la configuración actual de Supabase no debe exponerse a usuarios reales.
 - El README todavía menciona `mmsuarez-oss`, GitHub Pages y un workflow que ya no existe; hay que actualizarlo antes de usarlo como guía.
 - No borrar el repositorio anterior de GitHub hasta comprobar que el nuevo remoto conserva el historial y todos los cambios que se quieren mantener.
 
