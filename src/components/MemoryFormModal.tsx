@@ -22,7 +22,47 @@ const FEELINGS = [
 ]
 
 const MAX_PHOTO_SIZE = 20 * 1024 * 1024
+const MAX_RAW_PHOTO_SIZE = 100 * 1024 * 1024
 const MAX_PHOTO_DIMENSION = 1920
+const RAW_PHOTO_EXTENSIONS = new Set([
+  'raw', '3fr', 'ari', 'arw', 'bay', 'cap', 'cr2', 'cr3', 'crw', 'dcs',
+  'dcr', 'dng', 'drf', 'eip', 'erf', 'fff', 'gpr', 'iiq', 'k25', 'kdc',
+  'mef', 'mos', 'mrw', 'nef', 'nrw', 'obm', 'orf', 'pef', 'ptx', 'pxn',
+  'raf', 'rwl', 'rw2', 'rwz', 'sr2', 'srf', 'srw', 'x3f'
+])
+
+function canvasToJpegDataUrl(source: HTMLCanvasElement): Promise<string> {
+  const scale = Math.min(1, MAX_PHOTO_DIMENSION / Math.max(source.width, source.height))
+  const canvas = document.createElement('canvas')
+  canvas.width = Math.max(1, Math.round(source.width * scale))
+  canvas.height = Math.max(1, Math.round(source.height * scale))
+  const context = canvas.getContext('2d')
+  if (!context) return Promise.reject(new Error('El navegador no pudo procesar la imagen.'))
+
+  context.fillStyle = '#fff'
+  context.fillRect(0, 0, canvas.width, canvas.height)
+  context.drawImage(source, 0, 0, canvas.width, canvas.height)
+
+  return new Promise((resolve, reject) => {
+    canvas.toBlob(blob => {
+      if (!blob) {
+        reject(new Error('No se pudo comprimir la imagen.'))
+        return
+      }
+
+      const reader = new FileReader()
+      reader.onload = () => {
+        if (typeof reader.result !== 'string') {
+          reject(new Error('No se pudo leer la imagen procesada.'))
+          return
+        }
+        resolve(reader.result)
+      }
+      reader.onerror = () => reject(new Error('No se pudo leer la imagen procesada.'))
+      reader.readAsDataURL(blob)
+    }, 'image/jpeg', 0.82)
+  })
+}
 
 function compressPhoto(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -36,44 +76,71 @@ function compressPhoto(file: File): Promise<string> {
         return
       }
 
-      const scale = Math.min(1, MAX_PHOTO_DIMENSION / Math.max(image.naturalWidth, image.naturalHeight))
       const canvas = document.createElement('canvas')
-      canvas.width = Math.round(image.naturalWidth * scale)
-      canvas.height = Math.round(image.naturalHeight * scale)
+      canvas.width = image.naturalWidth
+      canvas.height = image.naturalHeight
       const context = canvas.getContext('2d')
       if (!context) {
         reject(new Error('El navegador no pudo procesar la imagen.'))
         return
       }
-
-      context.fillStyle = '#fff'
-      context.fillRect(0, 0, canvas.width, canvas.height)
-      context.drawImage(image, 0, 0, canvas.width, canvas.height)
-      canvas.toBlob(blob => {
-        if (!blob) {
-          reject(new Error('No se pudo comprimir la imagen.'))
-          return
-        }
-
-        const reader = new FileReader()
-        reader.onload = () => {
-          if (typeof reader.result !== 'string') {
-            reject(new Error('No se pudo leer la imagen procesada.'))
-            return
-          }
-          resolve(reader.result)
-        }
-        reader.onerror = () => reject(new Error('No se pudo leer la imagen procesada.'))
-        reader.readAsDataURL(blob)
-      }, 'image/jpeg', 0.82)
+      context.drawImage(image, 0, 0)
+      canvasToJpegDataUrl(canvas).then(resolve, reject)
     }
 
     image.onerror = () => {
       URL.revokeObjectURL(objectUrl)
-      reject(new Error('El formato de esta imagen no es compatible con el navegador.'))
+      reject(new Error('El navegador no reconoce esta imagen. Si es RAW, verifica que su formato sea compatible.'))
     }
     image.src = objectUrl
   })
+}
+
+async function compressRawPhoto(file: File): Promise<string> {
+  const [rawModule, coreUrl, wasmUrl, workerUrl] = await Promise.all([
+    import('rawconvert-wasm/dist/worker-client.js'),
+    import('rawconvert-wasm/dist/rawconvert-core.js?url'),
+    import('rawconvert-wasm/dist/rawconvert-core.wasm?url'),
+    import('rawconvert-wasm/dist/worker.js?url')
+  ])
+  const worker = await rawModule.RawConvertWorker.init({
+    workerUrl: workerUrl.default,
+    coreUrl: coreUrl.default,
+    wasmUrl: wasmUrl.default
+  })
+
+  try {
+    await worker.load(await file.arrayBuffer(), file.name)
+    const image = await worker.process({ halfSize: true, outputBps: 8 })
+    if (image.colors < 1 || image.colors > 4) {
+      throw new Error('El decodificador devolvió un formato de color no compatible.')
+    }
+
+    const source = image.data
+    const rgba = new Uint8ClampedArray(image.width * image.height * 4)
+    for (let sourceIndex = 0, targetIndex = 0; targetIndex < rgba.length; sourceIndex += image.colors, targetIndex += 4) {
+      if (image.colors === 1) {
+        rgba[targetIndex] = source[sourceIndex]
+        rgba[targetIndex + 1] = source[sourceIndex]
+        rgba[targetIndex + 2] = source[sourceIndex]
+      } else {
+        rgba[targetIndex] = source[sourceIndex]
+        rgba[targetIndex + 1] = source[sourceIndex + 1]
+        rgba[targetIndex + 2] = source[sourceIndex + 2]
+      }
+      rgba[targetIndex + 3] = image.colors === 4 ? source[sourceIndex + 3] : 255
+    }
+
+    const canvas = document.createElement('canvas')
+    canvas.width = image.width
+    canvas.height = image.height
+    const context = canvas.getContext('2d')
+    if (!context) throw new Error('El navegador no pudo procesar la imagen RAW.')
+    context.putImageData(new ImageData(rgba, image.width, image.height), 0, 0)
+    return await canvasToJpegDataUrl(canvas)
+  } finally {
+    worker.dispose()
+  }
 }
 
 export const MemoryFormModal: React.FC<MemoryFormModalProps> = ({
@@ -151,14 +218,17 @@ export const MemoryFormModal: React.FC<MemoryFormModalProps> = ({
 
     for (const file of files) {
       try {
-        if (!file.type.startsWith('image/')) {
+        const extension = file.name.split('.').pop()?.toLowerCase() || ''
+        const isRaw = RAW_PHOTO_EXTENSIONS.has(extension)
+        if (!isRaw && !file.type.startsWith('image/') && !['jpg', 'jpeg', 'jfif', 'png'].includes(extension)) {
           throw new Error('El archivo no es una imagen.')
         }
-        if (file.size > MAX_PHOTO_SIZE) {
-          throw new Error('La imagen supera el límite de 20 MB.')
+        const maxSize = isRaw ? MAX_RAW_PHOTO_SIZE : MAX_PHOTO_SIZE
+        if (file.size > maxSize) {
+          throw new Error(`La imagen supera el límite de ${isRaw ? '100' : '20'} MB.`)
         }
 
-        const url = await compressPhoto(file)
+        const url = isRaw ? await compressRawPhoto(file) : await compressPhoto(file)
         newPhotos.push({
           id: `photo-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
           url,
@@ -515,7 +585,7 @@ export const MemoryFormModal: React.FC<MemoryFormModalProps> = ({
               onChange={handlePhotoUpload}
               disabled={isUploadingPhotos}
               multiple
-              accept="image/*"
+              accept="image/*,.raw,.3fr,.ari,.arw,.bay,.cap,.cr2,.cr3,.crw,.dcs,.dcr,.dng,.drf,.eip,.erf,.fff,.gpr,.iiq,.k25,.kdc,.mef,.mos,.mrw,.nef,.nrw,.obm,.orf,.pef,.ptx,.pxn,.raf,.rwl,.rw2,.rwz,.sr2,.srf,.srw,.x3f,.jfif,.jpg,.jpeg,.png"
               className="hidden"
             />
             {isUploadingPhotos && (
