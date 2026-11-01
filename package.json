@@ -13,6 +13,7 @@
     "@supabase/supabase-js": "^2.118.0",
     "canvas-confetti": "^1.9.4",
     "lucide-react": "^1.66.0",
+    "rawconvert-wasm": "0.1.1",
     "react": "^19.3.1",
     "react-dom": "^19.3.1"
   },
