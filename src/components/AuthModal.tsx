@@ -15,7 +15,14 @@ interface AuthModalProps {
   onSuccess: (user: UserProfile) => void
 }
 
-const EMOJI_OPTIONS = ['💖', '🌹', '✨', '☕', '🐱', '💫', '🌟', '🍕', '💍', '🚀']
+const EMOJI_OPTIONS = [
+  '💖', '🌹', '✨', '☕', '🐱', '💫', '🌟', '🍕', '💍', '🚀',
+  '🐙', '🦑', '🦜', '🦋', '🐢', '🐬', '🐳', '🦈', '🦭', '🐧',
+  '🦩', '🦚', '🦉', '🐸', '🐼', '🦊', '🐻', '🐨', '🐰', '🐹',
+  '🐶', '🐈', '🐾', '🍓', '🍄', '🌈', '🌙', '⭐', '🎨', '🎮',
+  '🎧', '📚', '🌻', '🌵', '🌊', '💐', '🪷', '🪼', '🧸', '🪐',
+  '🍀', '🌸'
+]
 
 export const AuthModal: React.FC<AuthModalProps> = ({
   isOpen,
@@ -369,6 +376,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                       type="button"
                       key={em}
                       onClick={() => setAvatarEmoji(em)}
+                      title={em}
+                      aria-label={`Elegir ícono ${em}`}
+                      aria-pressed={avatarEmoji === em}
                       className={`w-9 h-9 rounded-lg text-lg flex items-center justify-center border transition-all cursor-pointer ${
                         avatarEmoji === em
                           ? 'border-rose-500 bg-rose-50 dark:bg-rose-950/60 scale-110 shadow-xs'

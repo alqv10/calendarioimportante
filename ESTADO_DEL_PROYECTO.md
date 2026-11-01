@@ -33,7 +33,7 @@ Actualizado: 2026-10-31
 
 ### Prioridad crítica: autenticación y privacidad
 
-El código ahora utiliza Supabase Auth para cuentas en la nube y RLS para restringir tablas por usuario. El esquema seguro **no se ha ejecutado ni verificado contra una instancia real**.
+El código utiliza Supabase Auth, RLS por propietario y emparejamiento mutuo de calendarios con invitación aceptada y acceso de solo lectura. El esquema seguro **no se ha ejecutado ni verificado contra una instancia real**.
 
 Antes de aceptar usuarios reales:
 
@@ -43,6 +43,8 @@ Antes de aceptar usuarios reales:
 4. No publicar credenciales secretas en el cliente. La clave pública `anon` no sustituye las políticas RLS.
 
 **No conectar el prototipo Supabase anterior ni usar el esquema antiguo con datos personales reales.** No hay migración automática de esos perfiles/recuerdos.
+
+El emparejamiento comparte todos los recuerdos existentes y futuros, incluidas fotos y audios. Cada persona solo puede modificar o borrar los recuerdos de su propia cuenta; cualquiera puede revocar el vínculo. También falta probar con dos cuentas reales la invitación, la lectura mutua, el bloqueo de ediciones ajenas y la revocación.
 
 ### Publicación
 

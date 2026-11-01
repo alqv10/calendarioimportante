@@ -39,7 +39,9 @@ Para habilitar cuentas compartidas:
 2. Ejecuta `public/supabase-schema.sql` en el SQL Editor. El esquema configura Supabase Auth, crea el perfil al registrarse y limita los perfiles y recuerdos autenticados mediante RLS.
 3. En Authentication, configura el envío y confirmación de correo, así como las URL permitidas para tu sitio.
 4. En la aplicación, abre la configuración de nube e introduce la URL del proyecto y su clave pública `anon`/publishable.
-5. Prueba registro, confirmación de correo, acceso y aislamiento entre dos cuentas antes de guardar datos reales.
+5. Prueba registro, confirmación de correo, acceso, emparejamiento y aislamiento entre dos cuentas antes de guardar datos reales.
+
+Con el esquema actualizado, cada cuenta puede crear un código de invitación de un solo uso, válido por 48 horas. La otra cuenta debe aceptarlo. Al emparejarse, ambas pueden consultar todos los recuerdos, fotos y audios, pero solo editar o borrar los propios. Cualquiera puede desvincularlas y revocar el acceso. Ambas cuentas deben usar el mismo proyecto Supabase.
 
 La configuración de Supabase se guarda en el navegador. Hasta publicar la URL y la clave pública como configuración compartida del sitio, cada persona tendrá que introducirlas en su propio navegador; sin ello solo funciona el modo local.
 

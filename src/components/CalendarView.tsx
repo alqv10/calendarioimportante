@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Plus, MapPin, Sparkles, Image as ImageIcon } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Plus, MapPin, Sparkles, Image as ImageIcon, Link2 } from 'lucide-react'
 import { CATEGORIES } from '../types'
 import type { MemoryMoment } from '../types'
 import { generateCalendarMonth, MONTH_NAMES_ES, DAY_NAMES_ES, formatDateSpanish } from '../utils/dateUtils'
@@ -9,6 +9,7 @@ interface CalendarViewProps {
   onSelectDate: (dateStr: string) => void
   onSelectMoment: (moment: MemoryMoment) => void
   onAddMomentForDate: (dateStr: string) => void
+  currentUserId?: string
 }
 
 export const CalendarView: React.FC<CalendarViewProps> = ({
@@ -16,6 +17,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
   onSelectDate,
   onSelectMoment,
   onAddMomentForDate,
+  currentUserId
 }) => {
   const today = new Date()
   const [currentYear, setCurrentYear] = useState<number>(today.getFullYear())
@@ -137,6 +139,9 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
             const primaryMoment = dayMoments[0]
             const firstPhoto = primaryMoment?.photos?.[0]
             const totalDayPhotos = dayMoments.reduce((acc, m) => acc + (m.photos?.length || 0), 0)
+            const hasSharedMoments = dayMoments.some(moment =>
+              !!currentUserId && !!moment.userId && moment.userId !== currentUserId
+            )
 
             return (
               <div
@@ -203,6 +208,15 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                     {hasMilestone && (
                       <span title="Hito especial" className="text-amber-400 drop-shadow-sm text-xs animate-bounce">
                         ✨
+                      </span>
+                    )}
+                    {hasSharedMoments && (
+                      <span
+                        title="Hay recuerdos de la cuenta emparejada"
+                        aria-label="Hay recuerdos compartidos"
+                        className="inline-flex"
+                      >
+                        <Link2 aria-hidden="true" className="w-3 h-3 text-sky-500" />
                       </span>
                     )}
                     {totalDayPhotos > 0 && !hasMilestone && (

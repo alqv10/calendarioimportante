@@ -8,6 +8,7 @@ interface DayMomentsModalProps {
   onClose: () => void
   dateStr: string
   moments: MemoryMoment[]
+  currentUserId?: string
   onSelectMoment: (moment: MemoryMoment) => void
   onAddNew: (dateStr: string) => void
 }
@@ -17,6 +18,7 @@ export const DayMomentsModal: React.FC<DayMomentsModalProps> = ({
   onClose,
   dateStr,
   moments,
+  currentUserId,
   onSelectMoment,
   onAddNew
 }) => {
@@ -99,6 +101,11 @@ export const DayMomentsModal: React.FC<DayMomentsModalProps> = ({
                         <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${cat.badgeBg} ${cat.darkBadgeBg}`}>
                           {cat.label}
                         </span>
+                        {currentUserId && moment.userId && moment.userId !== currentUserId && (
+                          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-sky-100 dark:bg-sky-950 text-sky-800 dark:text-sky-300">
+                            Compartido
+                          </span>
+                        )}
                         {moment.isMilestone && (
                           <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300 flex items-center gap-0.5">
                             <Sparkles className="w-3 h-3 text-amber-600" /> Hito

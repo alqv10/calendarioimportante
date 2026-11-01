@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react'
-import { Calendar, BookOpen, Sparkles, Plus, Download, Upload, Heart, Sun, Moon, LogOut, User, Database } from 'lucide-react'
+import { Calendar, BookOpen, Sparkles, Plus, Download, Upload, Heart, Sun, Moon, LogOut, User, Database, UsersRound } from 'lucide-react'
 import type { ViewMode, MemoryMoment, UserProfile } from '../types'
 import { exportMemoriesJSON, importMemoriesJSON } from '../services/storage'
 import { triggerJoyfulConfetti } from '../services/confetti'
@@ -17,6 +17,7 @@ interface HeaderProps {
   onToggleDarkMode: () => void
   onOpenGraceEasterEgg: () => void
   onOpenCloudConfig: () => void
+  onOpenCalendarPairing: () => void
   isCloudConnected: boolean
 }
 
@@ -33,6 +34,7 @@ export const Header: React.FC<HeaderProps> = ({
   onToggleDarkMode,
   onOpenGraceEasterEgg,
   onOpenCloudConfig,
+  onOpenCalendarPairing,
   isCloudConnected
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -183,6 +185,15 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Right Actions */}
         <div className="flex items-center gap-2">
+
+          <button
+            onClick={onOpenCalendarPairing}
+            title="Emparejar calendarios"
+            aria-label="Emparejar calendarios"
+            className="p-2 rounded-lg text-stone-600 dark:text-stone-300 hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/50 dark:hover:text-rose-300 transition-colors border border-transparent hover:border-rose-200 dark:hover:border-rose-900 cursor-pointer"
+          >
+            <UsersRound className="w-4 h-4" />
+          </button>
           
           {/* Cloud Database Connection */}
           <button
