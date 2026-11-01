@@ -27,10 +27,12 @@ Actualizado: 2026-10-31
 
 - Repositorio y remoto actuales: `alqv10/calendarioimportante`, rama `master`.
 - La autenticación segura se publicó en `53c73fd`; los avatares ampliados y el emparejamiento de calendarios se publicaron en `7d96a04`, ambos en `origin/master`.
-- Producción: https://calendarioimportante.vercel.app. Se comprobó que el sitio y `supabase-schema.sql` responden sin inicio de sesión.
-- El proyecto Vercel existe, pero no quedó conectado a GitHub: Vercel requiere configurar una conexión de inicio de sesión de GitHub. Los cambios futuros no se desplegarán automáticamente hasta completar esa conexión.
-- No se ha configurado ni probado un proyecto Supabase; las cuentas cloud no están activas en producción. El código acepta variables compartidas en el despliegue o configuración manual por navegador.
-- El cambio local que exige autenticación y bloquea los perfiles locales aún no está publicado; configura Supabase antes de desplegarlo para no dejar a los usuarios sin acceso.
+- El bloqueo de acceso por sesión, la configuración móvil y los iconos PWA se publicaron en `efccdef` y están en `origin/master`.
+- Producción: https://calendarioimportante.vercel.app. Se verificó que presenta iniciar sesión/crear cuenta y no muestra recuerdos cuando no hay sesión.
+- El proyecto Supabase gratuito está Healthy y ya tiene aplicado `public/supabase-schema.sql`, con RLS y emparejamiento de calendarios.
+- Las variables públicas `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY` están configuradas en Vercel Production. Supabase tiene el dominio de producción como Site URL y como URL permitida de redirección.
+- El proyecto Vercel no está conectado a GitHub para despliegues automáticos; el despliegue actual se hizo manualmente con la CLI.
+- No se ha creado ni probado una cuenta de usuario real; la confirmación por correo y los flujos entre dos cuentas todavía necesitan pruebas.
 - El README describe el repositorio y las instrucciones actuales; GitHub Pages ya no está configurado.
 - No borrar el repositorio anterior de GitHub hasta comprobar que el nuevo remoto conserva el historial y todos los cambios que se quieren mantener.
 
@@ -38,14 +40,13 @@ Actualizado: 2026-10-31
 
 ### Prioridad crítica: autenticación y privacidad
 
-El código utiliza Supabase Auth, RLS por propietario y emparejamiento mutuo de calendarios con invitación aceptada y acceso de solo lectura. El inicio exige una sesión y borra la vista anterior al cambiar de cuenta. El esquema seguro **no se ha ejecutado ni verificado contra una instancia real**.
+El código utiliza Supabase Auth, RLS por propietario y emparejamiento mutuo de calendarios con invitación aceptada y acceso de solo lectura. El inicio exige una sesión y borra la vista anterior al cambiar de cuenta. El esquema seguro ya se ejecutó en el proyecto nuevo; falta probar el comportamiento completo con cuentas reales.
 
 Antes de aceptar usuarios reales:
 
-1. Crear un proyecto Supabase nuevo y ejecutar `public/supabase-schema.sql`.
-2. Verificar registro, confirmación por correo, inicio/cierre de sesión y aislamiento CRUD de recuerdos entre dos cuentas.
-3. Configurar y probar URL permitidas/callbacks de autenticación en Supabase.
-4. No publicar credenciales secretas en el cliente. La clave pública `anon` no sustituye las políticas RLS.
+1. Verificar registro, confirmación por correo, inicio/cierre de sesión y aislamiento CRUD de recuerdos entre dos cuentas.
+2. Probar invitación, lectura mutua, bloqueo de cambios sobre recuerdos ajenos y revocación del emparejamiento.
+3. No publicar credenciales secretas en el cliente. La clave pública de Supabase no sustituye las políticas RLS.
 
 **No conectar el prototipo Supabase anterior ni usar el esquema antiguo con datos personales reales.** No hay migración automática de esos perfiles/recuerdos.
 
@@ -55,8 +56,8 @@ Los perfiles locales y recuerdos sin propietario se mantienen ocultos; no se mig
 
 ### Publicación
 
-- Conectar GitHub a Vercel para habilitar despliegues automáticos, o seguir desplegando manualmente.
-- Configurar Supabase, las variables `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY`, y las URL de autenticación para `https://calendarioimportante.vercel.app`.
+- Opcional: conectar GitHub a Vercel para habilitar despliegues automáticos; por ahora se usa `vercel deploy --prod`.
+- La instancia y las variables de producción ya están configuradas para `https://calendarioimportante.vercel.app`.
 
 ### Compatibilidad con iPhone/iOS
 
