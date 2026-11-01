@@ -41,13 +41,17 @@ Para habilitar cuentas compartidas:
 4. En la aplicación, abre la configuración de nube e introduce la URL del proyecto y su clave pública `anon`/publishable.
 5. Prueba registro, confirmación de correo, acceso y aislamiento entre dos cuentas antes de guardar datos reales.
 
+La configuración de Supabase se guarda en el navegador. Hasta publicar la URL y la clave pública como configuración compartida del sitio, cada persona tendrá que introducirlas en su propio navegador; sin ello solo funciona el modo local.
+
 **No ejecutes el esquema sobre la base de datos del prototipo anterior.** Esa versión guardaba contraseñas en `profiles` y usaba políticas públicas. El esquema nuevo detecta sus tablas incompatibles y aborta; no migra los datos antiguos. Respalda y migra cualquier dato existente por separado. Nunca pongas una `service_role` key en la aplicación.
 
 Fotos y audio todavía se guardan en los datos del recuerdo; no se ha configurado Supabase Storage ni un flujo de migración de archivos.
 
 ## Despliegue
 
-Hay configuración de compilación para Vercel (`vercel.json`) y Netlify (`netlify.toml`), pero no se ha verificado un sitio de producción. Importa el repositorio `alqv10/calendarioimportante` en uno de esos servicios y confirma el despliegue. Configura las URL de autenticación de Supabase con el dominio final.
+El sitio está publicado en [calendarioimportante.vercel.app](https://calendarioimportante.vercel.app); también se comprobó que la página y `supabase-schema.sql` son accesibles. Aún no se ha conectado un proyecto Supabase, así que las cuentas compartidas no están habilitadas.
+
+El proyecto de Vercel todavía no está conectado a GitHub para despliegues automáticos. La conexión falló porque la cuenta de Vercel necesita una conexión de inicio de sesión de GitHub; se puede completar desde Vercel o desplegar manualmente con `vercel deploy --prod`. Configura las URL de autenticación de Supabase con el dominio final.
 
 GitHub Pages ya no está configurado. No borres otro repositorio ni cambies de proveedor hasta verificar la publicación y la transferencia del historial.
 
