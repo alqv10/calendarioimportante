@@ -169,6 +169,7 @@ export const MemoryFormModal: React.FC<MemoryFormModalProps> = ({
   const [songUrl, setSongUrl] = useState('')
   const [audioData, setAudioData] = useState<string | undefined>()
   const [audioFileName, setAudioFileName] = useState<string>('')
+  const [audioPath, setAudioPath] = useState<string | undefined>()
 
   const fileInputRef = useRef<HTMLInputElement>(null)
   const audioInputRef = useRef<HTMLInputElement>(null)
@@ -187,6 +188,7 @@ export const MemoryFormModal: React.FC<MemoryFormModalProps> = ({
       setSongArtist(initialData.songArtist || '')
       setSongUrl(initialData.songUrl || '')
       setAudioData(initialData.audioData)
+      setAudioPath(initialData.audioPath)
       setAudioFileName(initialData.audioData ? 'Archivo de audio guardado' : '')
     } else {
       const defaultDate = initialDate || todayISO()
@@ -202,6 +204,7 @@ export const MemoryFormModal: React.FC<MemoryFormModalProps> = ({
       setSongArtist('')
       setSongUrl('')
       setAudioData(undefined)
+      setAudioPath(undefined)
       setAudioFileName('')
     }
   }, [initialData, initialDate, isOpen])
@@ -256,6 +259,7 @@ export const MemoryFormModal: React.FC<MemoryFormModalProps> = ({
     if (!file) return
 
     setAudioFileName(file.name)
+    setAudioPath(undefined) // el archivo nuevo reemplaza al que hubiera en Storage
     const reader = new FileReader()
     reader.onload = (event) => {
       const base64 = event.target?.result as string
@@ -300,6 +304,7 @@ export const MemoryFormModal: React.FC<MemoryFormModalProps> = ({
       songArtist: songArtist.trim() || undefined,
       songUrl: songUrl.trim() || undefined,
       audioData: audioData || undefined,
+      audioPath,
       createdAt: initialData?.createdAt || Date.now(),
       updatedAt: Date.now()
     }
@@ -500,7 +505,7 @@ export const MemoryFormModal: React.FC<MemoryFormModalProps> = ({
                 {audioData && (
                   <button
                     type="button"
-                    onClick={() => { setAudioData(undefined); setAudioFileName('') }}
+                    onClick={() => { setAudioData(undefined); setAudioPath(undefined); setAudioFileName('') }}
                     title="Eliminar archivo de audio"
                     className="p-2 rounded-lg hover:bg-rose-100 dark:hover:bg-rose-950 text-rose-500 cursor-pointer"
                   >

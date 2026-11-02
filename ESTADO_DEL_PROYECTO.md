@@ -68,7 +68,7 @@ Los perfiles locales y recuerdos sin propietario se mantienen ocultos; no se mig
 
 ### Datos y operación
 
-- Definir almacenamiento remoto para fotos y audio; el esquema SQL por sí solo no configura almacenamiento de archivos.
+- Fotos y audio se guardan en Supabase Storage (bucket privado `memorias`, `public/supabase-storage.sql`), no dentro de la fila del recuerdo. Falta ejecutar ese SQL en el proyecto de producción y probarlo con una cuenta real: sin el bucket, subir una foto falla.
 - Decidir cómo migrar los recuerdos locales existentes a una cuenta autenticada y cómo hacer copias de seguridad.
 - Confirmar el borrado o archivo del repositorio anterior solo después de verificar la migración al repositorio nuevo.
 
