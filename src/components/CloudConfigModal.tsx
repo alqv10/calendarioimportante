@@ -6,6 +6,7 @@ import {
   saveSupabaseConfig,
   clearSupabaseConfig
 } from '../services/supabase'
+import { Modal } from './Modal'
 
 interface CloudConfigModalProps {
   isOpen: boolean
@@ -35,8 +36,6 @@ export const CloudConfigModal: React.FC<CloudConfigModalProps> = ({
       setAnonKey('')
     }
   }, [isOpen])
-
-  if (!isOpen) return null
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault()
@@ -74,15 +73,8 @@ export const CloudConfigModal: React.FC<CloudConfigModalProps> = ({
   }
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 dark:bg-black/80 backdrop-blur-sm overflow-y-auto animate-fade-in"
-      style={{
-        paddingTop: 'max(1rem, env(safe-area-inset-top))',
-        paddingBottom: 'max(1rem, env(safe-area-inset-bottom))'
-      }}
-    >
-      <div className="relative w-full max-w-lg bg-white dark:bg-[#191720] rounded-2xl border border-stone-200 dark:border-stone-800 shadow-2xl overflow-hidden my-6">
-        
+    <Modal isOpen={isOpen} onClose={onClose} width="max-w-lg" label="Base de datos en la nube">
+      
         {/* Header */}
         <div className="bg-gradient-to-r from-emerald-600 to-teal-500 p-5 sm:p-6 text-white">
           <div className="flex items-center justify-between">
@@ -99,7 +91,7 @@ export const CloudConfigModal: React.FC<CloudConfigModalProps> = ({
                     ? '🟢 Conexión compartida de la aplicación'
                     : isConnected
                       ? '🟢 Conectado con Supabase (PostgreSQL)'
-                      : '🟡 Modo Local (IndexedDB)'}
+                      : '🔴 Sin conexión: no se puede iniciar sesión'}
                 </span>
               </div>
             </div>
@@ -213,9 +205,7 @@ export const CloudConfigModal: React.FC<CloudConfigModalProps> = ({
           >
             Abrir el esquema SQL incluido
           </a>
-        </div>
-
       </div>
-    </div>
+    </Modal>
   )
 }

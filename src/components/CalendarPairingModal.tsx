@@ -9,6 +9,7 @@ import {
   type CalendarPairing
 } from '../services/calendarPairing'
 import { isCloudDatabaseConnected } from '../services/supabase'
+import { Modal } from './Modal'
 
 interface CalendarPairingModalProps {
   isOpen: boolean
@@ -56,8 +57,6 @@ export const CalendarPairingModal: React.FC<CalendarPairingModalProps> = ({
 
     return () => { active = false }
   }, [canUseCloud, isOpen])
-
-  if (!isOpen) return null
 
   const handleCreateInvite = async () => {
     setErrorMsg('')
@@ -122,14 +121,8 @@ export const CalendarPairingModal: React.FC<CalendarPairingModalProps> = ({
   const inputClass = 'w-full px-3 py-2.5 rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 text-stone-900 dark:text-stone-100 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400'
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 dark:bg-black/80 backdrop-blur-sm overflow-y-auto">
-      <section
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="calendar-pairing-title"
-        className="relative w-full max-w-lg bg-white dark:bg-[#191720] rounded-2xl border border-stone-200 dark:border-stone-800 shadow-2xl overflow-hidden my-6"
-      >
-        <div className="bg-gradient-to-r from-rose-500 via-rose-600 to-amber-500 p-6 text-white">
+    <Modal isOpen={isOpen} onClose={onClose} width="max-w-lg" label="Emparejar calendarios">
+      <div className="bg-gradient-to-r from-rose-500 via-rose-600 to-amber-500 p-6 text-white">
           <button
             type="button"
             onClick={onClose}
@@ -261,8 +254,7 @@ export const CalendarPairingModal: React.FC<CalendarPairingModalProps> = ({
               </form>
             </>
           )}
-        </div>
-      </section>
-    </div>
+      </div>
+    </Modal>
   )
 }

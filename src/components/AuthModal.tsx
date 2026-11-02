@@ -4,6 +4,7 @@ import type { UserProfile } from '../types'
 import { loginUser, registerUser } from '../services/auth'
 import { triggerJoyfulConfetti } from '../services/confetti'
 import { isCloudDatabaseConnected } from '../services/supabase'
+import { Modal } from './Modal'
 
 function getErrorMessage(error: unknown, fallback: string): string {
   return error instanceof Error ? error.message : fallback
@@ -50,8 +51,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [errorMsg, setErrorMsg] = useState('')
   const [statusMsg, setStatusMsg] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
-
-  if (!isOpen) return null
 
   const isCloudMode = isCloudDatabaseConnected()
 
@@ -110,15 +109,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   }
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 dark:bg-black/80 backdrop-blur-sm overflow-y-auto animate-fade-in"
-      style={{
-        paddingTop: 'max(1rem, env(safe-area-inset-top))',
-        paddingBottom: 'max(1rem, env(safe-area-inset-bottom))'
-      }}
-    >
-      <div className="relative w-full max-w-md bg-white dark:bg-[#191720] rounded-2xl border border-stone-200 dark:border-stone-800 shadow-2xl overflow-hidden my-6">
-        
+    <Modal isOpen={isOpen} onClose={onClose} dismissible={canClose} width="max-w-md" label="Cuenta">
+      
         {/* Header */}
         <div className="relative bg-gradient-to-r from-rose-500 via-rose-600 to-amber-500 p-6 text-white">
           {canClose && (
@@ -391,9 +383,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             </form>
           )}
 
-        </div>
-
       </div>
-    </div>
+    </Modal>
   )
 }

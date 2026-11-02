@@ -3,6 +3,8 @@ import type React from 'react'
 import { X, Upload, Trash2, MapPin, Sparkles, Heart, Image as ImageIcon, Calendar, Music, Link2, Volume2 } from 'lucide-react'
 import { CATEGORIES } from '../types'
 import type { MemoryMoment, CategoryType, MemoryPhoto } from '../types'
+import { todayISO } from '../utils/dateUtils'
+import { Modal } from './Modal'
 
 interface MemoryFormModalProps {
   isOpen: boolean
@@ -12,7 +14,7 @@ interface MemoryFormModalProps {
   initialData?: MemoryMoment | null
 }
 
-const FEELINGS = [
+const FEELINGS: { key: NonNullable<MemoryMoment['feeling']>; label: string; emoji: string }[] = [
   { key: 'amor', label: 'Amor puro', emoji: '💖' },
   { key: 'magico', label: 'Mágico', emoji: '✨' },
   { key: 'feliz', label: 'Súper Feliz', emoji: '🥰' },
@@ -155,7 +157,7 @@ export const MemoryFormModal: React.FC<MemoryFormModalProps> = ({
   const [category, setCategory] = useState<CategoryType>('cita')
   const [description, setDescription] = useState('')
   const [location, setLocation] = useState('')
-  const [feeling, setFeeling] = useState<any>('amor')
+  const [feeling, setFeeling] = useState<MemoryMoment['feeling']>('amor')
   const [isMilestone, setIsMilestone] = useState(false)
   const [photos, setPhotos] = useState<MemoryPhoto[]>([])
   const [isUploadingPhotos, setIsUploadingPhotos] = useState(false)
@@ -187,7 +189,7 @@ export const MemoryFormModal: React.FC<MemoryFormModalProps> = ({
       setAudioData(initialData.audioData)
       setAudioFileName(initialData.audioData ? 'Archivo de audio guardado' : '')
     } else {
-      const defaultDate = initialDate || new Date().toISOString().split('T')[0]
+      const defaultDate = initialDate || todayISO()
       setDate(defaultDate)
       setTitle('')
       setCategory('cita')
@@ -203,8 +205,6 @@ export const MemoryFormModal: React.FC<MemoryFormModalProps> = ({
       setAudioFileName('')
     }
   }, [initialData, initialDate, isOpen])
-
-  if (!isOpen) return null
 
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const input = e.currentTarget
@@ -313,9 +313,8 @@ export const MemoryFormModal: React.FC<MemoryFormModalProps> = ({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 dark:bg-black/80 backdrop-blur-sm overflow-y-auto animate-fade-in">
-      <div className="relative w-full max-w-xl bg-white dark:bg-[#191720] rounded-2xl shadow-2xl border border-stone-200 dark:border-stone-800 overflow-hidden my-4 sm:my-8">
-        
+    <Modal isOpen={isOpen} onClose={onClose} label={initialData ? 'Editar recuerdo' : 'Nuevo recuerdo'}>
+      
         {/* Header */}
         <div className="relative bg-gradient-to-r from-rose-500 via-rose-600 to-amber-500 p-5 sm:p-6 text-white">
           <div className="flex items-center justify-between">
@@ -338,7 +337,7 @@ export const MemoryFormModal: React.FC<MemoryFormModalProps> = ({
         </div>
 
         {/* Form Body */}
-        <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-4 sm:space-y-5 max-h-[78vh] overflow-y-auto">
+        <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-4 sm:space-y-5">
           {saveError && (
             <div role="alert" className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800 dark:border-rose-900 dark:bg-rose-950/50 dark:text-rose-200">
               {saveError}
@@ -636,9 +635,7 @@ export const MemoryFormModal: React.FC<MemoryFormModalProps> = ({
             </button>
           </div>
 
-        </form>
-
-      </div>
-    </div>
+      </form>
+    </Modal>
   )
 }

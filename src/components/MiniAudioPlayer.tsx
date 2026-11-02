@@ -20,11 +20,8 @@ export const MiniAudioPlayer: React.FC<MiniAudioPlayerProps> = ({
   const audioRef = useRef<HTMLAudioElement | null>(null)
 
   useEffect(() => {
-    return () => {
-      if (audioRef.current) {
-        audioRef.current.pause()
-      }
-    }
+    const audio = audioRef.current
+    return () => { audio?.pause() }
   }, [])
 
   const togglePlay = (e: React.MouseEvent) => {

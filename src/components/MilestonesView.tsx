@@ -25,7 +25,7 @@ export const MilestonesView: React.FC<MilestonesViewProps> = ({
   ).sort((a, b) => a.date.localeCompare(b.date))
 
   const daysTogether = firstMoment ? getDaysTogether(firstMoment.date) : 0
-  const partner = currentUser?.partnerName || 'Grace'
+  const partner = currentUser?.partnerName?.trim()
 
   return (
     <div className="space-y-8 max-w-4xl mx-auto">
@@ -40,10 +40,10 @@ export const MilestonesView: React.FC<MilestonesViewProps> = ({
           <div>
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-white/20 backdrop-blur-md text-xs font-bold text-white mb-2.5">
               <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-              Nuestra Historia de Amor con {partner} 💖
+              {partner ? `Nuestra historia junto a ${partner}` : 'Nuestra historia de momentos'} 💖
             </div>
 
-            <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight">
+            <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-balance">
               {daysTogether > 0 ? (
                 <>
                   <span className="text-amber-200 font-black">{daysTogether}</span> días de momentos
@@ -114,7 +114,7 @@ export const MilestonesView: React.FC<MilestonesViewProps> = ({
                 <div key={moment.id} className="relative pl-6 sm:pl-8 group">
                   
                   {/* Pin Dot on timeline line */}
-                  <div className="absolute -left-[9px] top-3 w-4 h-4 rounded-sm bg-white dark:bg-stone-900 border-2 border-rose-500 group-hover:scale-125 transition-transform" />
+                  <div className="absolute -left-[9px] top-4 w-4 h-4 rounded-full bg-white dark:bg-stone-900 border-2 border-rose-500 group-hover:scale-125 transition-transform" />
 
                   {/* Milestone Card (sleek geometric rounded-xl) */}
                   <div
@@ -147,7 +147,13 @@ export const MilestonesView: React.FC<MilestonesViewProps> = ({
                         </div>
 
                         <h4 className="font-bold text-stone-900 dark:text-stone-100 text-base sm:text-lg group-hover:text-rose-500 transition-colors">
-                          {moment.title}
+                          <button
+                            type="button"
+                            onClick={event => { event.stopPropagation(); onSelectMoment(moment) }}
+                            className="text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 rounded-sm cursor-pointer"
+                          >
+                            {moment.title}
+                          </button>
                         </h4>
 
                         {moment.description && (

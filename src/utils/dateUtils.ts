@@ -5,6 +5,12 @@ export const MONTH_NAMES_ES = [
 
 export const DAY_NAMES_ES = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb']
 
+/** Fecha de hoy en YYYY-MM-DD según el reloj local (no UTC). */
+export function todayISO(): string {
+  const now = new Date()
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
+}
+
 export function formatDateSpanish(dateString: string): string {
   if (!dateString) return ''
   const [year, month, day] = dateString.split('-').map(Number)
@@ -79,8 +85,7 @@ export function generateCalendarMonth(year: number, month: number): CalendarDay[
   const startWeekday = firstDayOfMonth.getDay() // 0 = Sun
   const totalDays = lastDayOfMonth.getDate()
 
-  const today = new Date()
-  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
+  const todayStr = todayISO()
 
   const days: CalendarDay[] = []
 

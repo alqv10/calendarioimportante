@@ -2,11 +2,20 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
+@theme {
+  --animate-fade-in: fade-in 0.15s ease-out;
+}
+
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: none; }
+}
+
 @layer base {
   :root {
     --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
   }
-  
+
   body {
     font-family: var(--font-sans);
     margin: 0;
@@ -16,11 +25,33 @@
   }
 }
 
+@layer utilities {
+  .no-scrollbar {
+    scrollbar-width: none;
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+}
+
 @media (max-width: 640px) {
   input,
   select,
   textarea {
     font-size: 16px;
+  }
+}
+
+/* La app usa pulse/bounce/ping en varios lugares; respetar la preferencia del sistema. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }
 

@@ -5,6 +5,7 @@ import type { MemoryMoment } from '../types'
 import { formatDateSpanish, getTimeAgoSpanish } from '../utils/dateUtils'
 import { triggerAnniversaryExplosion } from '../services/confetti'
 import { MiniAudioPlayer } from './MiniAudioPlayer'
+import { Modal } from './Modal'
 
 interface MemoryDetailModalProps {
   moment: MemoryMoment | null
@@ -55,9 +56,8 @@ export const MemoryDetailModal: React.FC<MemoryDetailModalProps> = ({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 dark:bg-black/80 backdrop-blur-sm overflow-y-auto animate-fade-in">
-      <div className="relative w-full max-w-xl bg-white dark:bg-[#191720] rounded-2xl shadow-2xl border border-stone-200 dark:border-stone-800 overflow-hidden my-4 sm:my-8">
-        
+    <Modal isOpen onClose={onClose} label={moment.title}>
+      
         {/* Photo Carousel or Top Graphic */}
         {hasPhotos ? (
           <div className="relative w-full h-64 sm:h-80 bg-stone-900">
@@ -73,12 +73,14 @@ export const MemoryDetailModal: React.FC<MemoryDetailModalProps> = ({
               <>
                 <button
                   onClick={() => setActivePhotoIdx((idx) => (idx === 0 ? photos.length - 1 : idx - 1))}
+                  aria-label="Foto anterior"
                   className="absolute left-3 top-1/2 -translate-y-1/2 p-2 rounded-xl bg-black/40 hover:bg-black/70 text-white backdrop-blur-xs transition-colors cursor-pointer"
                 >
                   <ChevronLeft className="w-5 h-5" />
                 </button>
                 <button
                   onClick={() => setActivePhotoIdx((idx) => (idx === photos.length - 1 ? 0 : idx + 1))}
+                  aria-label="Foto siguiente"
                   className="absolute right-3 top-1/2 -translate-y-1/2 p-2 rounded-xl bg-black/40 hover:bg-black/70 text-white backdrop-blur-xs transition-colors cursor-pointer"
                 >
                   <ChevronRight className="w-5 h-5" />
@@ -86,10 +88,13 @@ export const MemoryDetailModal: React.FC<MemoryDetailModalProps> = ({
 
                 <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1.5">
                   {photos.map((_, i) => (
-                    <span
+                    <button
                       key={i}
+                      type="button"
+                      aria-label={`Ver foto ${i + 1} de ${photos.length}`}
+                      aria-current={activePhotoIdx === i}
                       onClick={() => setActivePhotoIdx(i)}
-                      className={`h-1.5 rounded-sm transition-all cursor-pointer ${
+                      className={`h-1.5 rounded-sm transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 ${
                         activePhotoIdx === i ? 'w-6 bg-rose-400' : 'w-2 bg-white/60'
                       }`}
                     />
@@ -100,6 +105,7 @@ export const MemoryDetailModal: React.FC<MemoryDetailModalProps> = ({
 
             <button
               onClick={onClose}
+              aria-label="Cerrar"
               className="absolute top-4 right-4 p-2 rounded-xl bg-black/40 hover:bg-black/70 text-white backdrop-blur-xs transition-colors cursor-pointer"
             >
               <X className="w-5 h-5" />
@@ -146,7 +152,7 @@ export const MemoryDetailModal: React.FC<MemoryDetailModalProps> = ({
         )}
 
         {/* Modal Body */}
-        <div className="p-4 sm:p-6 space-y-4 max-h-[60vh] overflow-y-auto">
+        <div className="p-4 sm:p-6 space-y-4">
           {deleteError && (
             <div role="alert" className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800 dark:border-rose-900 dark:bg-rose-950/50 dark:text-rose-200">
               {deleteError}
@@ -247,9 +253,7 @@ export const MemoryDetailModal: React.FC<MemoryDetailModalProps> = ({
             </div>
           )}
 
-        </div>
-
       </div>
-    </div>
+    </Modal>
   )
 }
