@@ -20,7 +20,10 @@ export interface UserProfile {
 
 export interface MemoryPhoto {
   id: string
-  url: string // Base64 data URL or external URL
+  /** Para mostrar: data URL heredado, enlace externo, o URL firmada efímera. */
+  url: string
+  /** Ruta en Supabase Storage. Si existe, `url` es temporal y NO se persiste. */
+  path?: string
   caption?: string
 }
 
@@ -42,7 +45,9 @@ export interface MemoryMoment {
   songTitle?: string
   songArtist?: string
   songUrl?: string // External Spotify/YouTube link
-  audioData?: string // Base64 audio file (.mp3, .wav, .m4a)
+  audioData?: string // Base64 heredado, o URL firmada efímera si hay audioPath
+  /** Ruta del audio en Supabase Storage. Si existe, `audioData` no se persiste. */
+  audioPath?: string
   
   createdAt: number
   updatedAt: number

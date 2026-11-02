@@ -41,9 +41,10 @@ Para configurar otro despliegue:
 
 1. Crea un proyecto Supabase nuevo.
 2. Ejecuta `public/supabase-schema.sql` en el SQL Editor. El esquema configura Supabase Auth, crea el perfil al registrarse y limita los perfiles y recuerdos autenticados mediante RLS.
-3. En Authentication, configura el envío y confirmación de correo, así como las URL permitidas para tu sitio.
-4. Configura `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY` como variables del despliegue (o usa la configuración manual por navegador durante el desarrollo local).
-5. Prueba registro, confirmación de correo, acceso, emparejamiento y aislamiento entre dos cuentas antes de guardar datos reales. El correo de Supabase y el nombre de usuario único identifican cada cuenta.
+3. Ejecuta `public/supabase-storage.sql` en el SQL Editor. Crea el bucket privado `memorias` donde se guardan fotos y audio, con las mismas reglas de acceso que los recuerdos. Es aditivo y no toca datos existentes.
+4. En Authentication, configura el envío y confirmación de correo, así como las URL permitidas para tu sitio.
+5. Configura `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY` como variables del despliegue (o usa la configuración manual por navegador durante el desarrollo local).
+6. Prueba registro, confirmación de correo, acceso, emparejamiento y aislamiento entre dos cuentas antes de guardar datos reales. El correo de Supabase y el nombre de usuario único identifican cada cuenta.
 
 Con el esquema actualizado, cada cuenta puede crear un código de invitación de un solo uso, válido por 48 horas. La otra cuenta debe aceptarlo. De forma predeterminada cada persona solo puede consultar, editar y borrar sus propios recuerdos. Solo las dos cuentas emparejadas explícitamente pueden ver los recuerdos, fotos y audios de la otra; cada una conserva edición y borrado únicamente de los propios. Cualquiera puede desvincularlas y revocar el acceso. Ambas cuentas deben usar el mismo proyecto Supabase.
 
@@ -51,7 +52,9 @@ En producción, `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` y las URL de auten
 
 **No ejecutes el esquema sobre la base de datos del prototipo anterior.** Esa versión guardaba contraseñas en `profiles` y usaba políticas públicas. El esquema nuevo detecta sus tablas incompatibles y aborta; no migra los datos antiguos. Respalda y migra cualquier dato existente por separado. Nunca pongas una `service_role` key en la aplicación.
 
-Fotos y audio todavía se guardan en los datos del recuerdo; no se ha configurado Supabase Storage ni un flujo de migración de archivos.
+Fotos y audio se guardan en el bucket privado `memorias`, no dentro de la fila del recuerdo. Cada archivo vive en `<tu id>/<id del recuerdo>/<archivo>` y se lee mediante URLs firmadas que caducan en una hora; la cuenta emparejada puede leer los tuyos, nadie más.
+
+Los recuerdos antiguos que guardaban las fotos en base64 se siguen mostrando igual, y pasan al bucket la próxima vez que los edites y guardes. La exportación sigue siendo una copia completa: descarga los archivos y los incrusta en el JSON, así que se puede restaurar en otro proyecto de Supabase.
 
 ## Móviles e instalación
 
