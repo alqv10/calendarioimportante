@@ -28,8 +28,8 @@ Actualizado: 2026-10-31
 ## Estado actual de Git y publicación
 
 - Repositorio y remoto actuales: `alqv10/calendarioimportante`, rama `master`.
-- La autenticación segura se publicó en `53c73fd`; los avatares ampliados y el emparejamiento de calendarios se publicaron en `7d96a04`, ambos en `origin/master`.
-- El bloqueo de acceso por sesión, la configuración móvil y los iconos PWA se publicaron en `efccdef` y están en `origin/master`.
+- La autenticación segura se publicó en `4b2b214`; los avatares ampliados y el emparejamiento de calendarios se publicaron en `13403d3`, ambos en `origin/master`.
+- El bloqueo de acceso por sesión, la configuración móvil y los iconos PWA se publicaron en `7b1b71f` y están en `origin/master`.
 - Producción: https://calendarioimportante.vercel.app. Se verificó que presenta iniciar sesión/crear cuenta y no muestra recuerdos cuando no hay sesión.
 - El proyecto Supabase gratuito está Healthy y ya tiene aplicado `public/supabase-schema.sql`, con RLS y emparejamiento de calendarios.
 - Las variables públicas `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY` están configuradas en Vercel Production. Supabase tiene el dominio de producción como Site URL y como URL permitida de redirección.
