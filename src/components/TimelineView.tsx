@@ -139,7 +139,7 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 items-start gap-5">
           {filteredMemories.map(moment => {
             const cat = CATEGORIES[moment.category] || CATEGORIES.otro
             const firstPhoto = moment.photos?.[0]
@@ -150,7 +150,7 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
               <div
                 key={moment.id}
                 onClick={() => onSelectMoment(moment)}
-                className="group bg-white dark:bg-[#191722] rounded-2xl overflow-hidden border border-stone-200 dark:border-stone-800 shadow-xs hover:shadow-lg hover:border-rose-300 dark:hover:border-rose-700 transition-all duration-300 cursor-pointer flex flex-col justify-between"
+                className="group bg-white dark:bg-[#191722] rounded-2xl overflow-hidden border border-stone-200 dark:border-stone-800 shadow-xs hover:shadow-lg hover:border-rose-300 dark:hover:border-rose-700 transition-all duration-300 cursor-pointer flex flex-col"
               >
                 {/* Photo Top Header */}
                 {firstPhoto ? (
@@ -158,6 +158,7 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
                     <img
                       src={firstPhoto.url}
                       alt={moment.title}
+                      loading="lazy"
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     />
                     <div className="absolute top-3 left-3 flex items-center gap-1.5">
@@ -188,7 +189,7 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
                 )}
 
                 {/* Content */}
-                <div className="p-4 sm:p-5 flex-1 flex flex-col justify-between space-y-3">
+                <div className="p-4 sm:p-5 flex-1 flex flex-col space-y-3">
                   <div>
                     <div className="flex items-center justify-between gap-2 mb-1.5">
                       <span className="text-xs font-semibold text-rose-500 flex items-center gap-1">
@@ -201,7 +202,13 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
                     </div>
 
                     <h3 className="text-base sm:text-lg font-bold text-stone-900 dark:text-white group-hover:text-rose-500 transition-colors leading-snug">
-                      {moment.title}
+                      <button
+                        type="button"
+                        onClick={event => { event.stopPropagation(); onSelectMoment(moment) }}
+                        className="text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 rounded-sm cursor-pointer"
+                      >
+                        {moment.title}
+                      </button>
                     </h3>
 
                     {moment.description && (

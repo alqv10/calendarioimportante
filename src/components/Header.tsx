@@ -3,6 +3,7 @@ import { Calendar, BookOpen, Sparkles, Plus, Download, Upload, Heart, Sun, Moon,
 import type { ViewMode, MemoryMoment, UserProfile } from '../types'
 import { exportMemoriesJSON, importMemoriesJSON } from '../services/storage'
 import { triggerJoyfulConfetti } from '../services/confetti'
+import { todayISO } from '../utils/dateUtils'
 
 interface HeaderProps {
   currentView: ViewMode
@@ -64,7 +65,7 @@ export const Header: React.FC<HeaderProps> = ({
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = `recuerdos-${currentUser?.username || 'importantes'}-${new Date().toISOString().split('T')[0]}.json`
+      a.download = `recuerdos-${currentUser?.username || 'importantes'}-${todayISO()}.json`
       a.click()
       URL.revokeObjectURL(url)
       triggerJoyfulConfetti()
@@ -108,9 +109,11 @@ export const Header: React.FC<HeaderProps> = ({
       <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-3">
         
         {/* Brand / Logo (Secret: 3 clicks activates Easter Egg for Grace) */}
-        <div
+        <button
+          type="button"
           onClick={handleLogoClick}
-          className="flex items-center gap-3 cursor-pointer select-none group"
+          aria-label="Momentos Especiales"
+          className="flex items-center gap-3 text-left cursor-pointer select-none group"
         >
           <div className="relative">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-rose-500 to-amber-500 flex items-center justify-center text-white shadow-sm shadow-rose-500/20 transform transition-transform group-hover:scale-105 active:scale-95">
@@ -124,10 +127,10 @@ export const Header: React.FC<HeaderProps> = ({
 
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-stone-900 dark:text-white font-sans">
+              <h1 className="text-xl sm:text-2xl font-bold tracking-tight whitespace-nowrap text-stone-900 dark:text-white font-sans">
                 Momentos <span className="text-rose-500 font-extrabold">Especiales</span>
               </h1>
-              <span className="hidden sm:inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg text-xs font-semibold bg-rose-50 dark:bg-rose-950/50 text-rose-700 dark:text-rose-300 border border-rose-200/60 dark:border-rose-900/50">
+              <span className="hidden lg:inline-flex items-center gap-1 whitespace-nowrap px-2.5 py-0.5 rounded-lg text-xs font-semibold bg-rose-50 dark:bg-rose-950/50 text-rose-700 dark:text-rose-300 border border-rose-200/60 dark:border-rose-900/50">
                 <span>✨ {memories.length} recuerdos</span>
                 {totalPhotos > 0 && <span>• 📸 {totalPhotos}</span>}
               </span>
@@ -140,7 +143,7 @@ export const Header: React.FC<HeaderProps> = ({
               )}
             </p>
           </div>
-        </div>
+        </button>
 
         {/* View Switcher Tabs (Desktop / Tablet) */}
         <div className="hidden md:flex items-center bg-stone-100 dark:bg-stone-900 p-1 rounded-xl border border-stone-200/80 dark:border-stone-800">
@@ -179,7 +182,7 @@ export const Header: React.FC<HeaderProps> = ({
             <Sparkles className="w-4 h-4 text-purple-500" />
             <span>Hitos</span>
             {totalMilestones > 0 && (
-              <span className="bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300 text-[10px] px-1.5 py-0.2 rounded-md font-bold">
+              <span className="bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300 text-[10px] px-1.5 py-0.5 rounded-md font-bold">
                 {totalMilestones}
               </span>
             )}
@@ -202,6 +205,7 @@ export const Header: React.FC<HeaderProps> = ({
           <button
             onClick={onOpenCloudConfig}
             title={isCloudConnected ? "Base de datos en la nube (Conectado)" : "Conectar Base de Datos en la Nube (Supabase)"}
+            aria-label="Base de datos en la nube"
             className={`p-2 rounded-lg transition-colors border cursor-pointer ${
               isCloudConnected
                 ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border-emerald-300 dark:border-emerald-800'
@@ -215,7 +219,8 @@ export const Header: React.FC<HeaderProps> = ({
           <button
             onClick={onToggleDarkMode}
             title={isDarkMode ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
-            className="p-2 text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-lg transition-colors border border-transparent hover:border-stone-200 dark:hover:border-stone-700 cursor-pointer"
+            aria-label={isDarkMode ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
+            className="hidden md:block p-2 text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-lg transition-colors border border-transparent hover:border-stone-200 dark:hover:border-stone-700 cursor-pointer"
           >
             {isDarkMode ? (
               <Sun className="w-4 h-4 text-amber-400" />
@@ -236,7 +241,8 @@ export const Header: React.FC<HeaderProps> = ({
           <button
             onClick={handleExport}
             title="Exportar copia de seguridad"
-            className="p-2 text-stone-600 dark:text-stone-300 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-lg transition-colors cursor-pointer"
+            aria-label="Exportar copia de seguridad"
+            className="hidden sm:block p-2 text-stone-600 dark:text-stone-300 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-lg transition-colors cursor-pointer"
           >
             <Download className="w-4 h-4" />
           </button>
@@ -244,7 +250,8 @@ export const Header: React.FC<HeaderProps> = ({
           <button
             onClick={handleImportClick}
             title="Importar recuerdos"
-            className="p-2 text-stone-600 dark:text-stone-300 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-lg transition-colors cursor-pointer"
+            aria-label="Importar recuerdos"
+            className="hidden sm:block p-2 text-stone-600 dark:text-stone-300 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-lg transition-colors cursor-pointer"
           >
             <Upload className="w-4 h-4" />
           </button>
@@ -263,6 +270,7 @@ export const Header: React.FC<HeaderProps> = ({
               <button
                 onClick={onLogout}
                 title="Cerrar sesión"
+                aria-label="Cerrar sesión"
                 className="p-2 text-stone-400 hover:text-rose-500 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors cursor-pointer"
               >
                 <LogOut className="w-3.5 h-3.5" />

@@ -11,7 +11,9 @@ Actualizado: 2026-10-31
 - Calendario mensual, vista de recuerdos y línea de tiempo con búsqueda y filtros.
 - Edición de recuerdos con fotos, ubicación, descripción, hitos y música.
 - Tema claro/oscuro y navegación móvil.
-- Almacenamiento local heredado en IndexedDB con respaldo en `localStorage`; esos perfiles ya no pueden iniciar sesión.
+- Modales sobre el elemento nativo `<dialog>`: cierre con Escape, foco atrapado, fondo inerte y scroll de la página bloqueado mientras están abiertos.
+- Calendario y tarjetas operables por teclado: las celdas del día son `<button>` con nombre accesible y `aria-current` en el día de hoy; el título de cada recuerdo es el control enfocable que abre el detalle.
+- Los recuerdos viven solo en Supabase. La capa IndexedDB/`localStorage` se eliminó de `storage.ts`: era inalcanzable, porque la aplicación exige una sesión cloud y sin Supabase nunca hay usuario. Los datos locales antiguos siguen en el navegador de cada quien, pero ningún código los lee; si alguna vez hay que migrarlos, ese código está en el historial de git.
 - Cuentas cloud basadas en Supabase Auth (correo/contraseña), creación de perfiles al registrarse y políticas RLS por propietario.
 - La aplicación exige una sesión cloud antes de mostrar recuerdos; sin Supabase no permite entrar con perfiles locales.
 - La carga local filtra estrictamente por propietario y no muestra recuerdos sin dueño asignado.
@@ -72,4 +74,10 @@ Los perfiles locales y recuerdos sin propietario se mantienen ocultos; no se mig
 
 ## Verificación conocida
 
-La implementación local de autenticación obligatoria pasó `bun run build`, `bun run lint` y `git diff --check`. Lint aún reporta seis advertencias React preexistentes y el bundle principal supera 500 kB. Las políticas SQL todavía requieren pruebas contra una instancia real con dos cuentas. El proyecto no declara un script de pruebas automatizadas.
+La implementación local de autenticación obligatoria pasó `bun run build`, `bun run lint` y `git diff --check`. Las políticas SQL todavía requieren pruebas contra una instancia real con dos cuentas.
+
+Lint reporta tres advertencias `set-state-in-effect` que quedan a propósito: son sincronizaciones de props a estado en `App`, `CloudConfigModal` y `MemoryFormModal`, y reescribirlas es riesgo sin beneficio visible.
+
+El bundle se reparte en `vendor` (React + Supabase, ~433 kB / 123 kB gzip, cambia casi nunca) y el código de la aplicación (~130 kB / 31 kB gzip). `canvas-confetti` se carga bajo demanda. El grueso restante es React y Supabase; no hay recorte importante sin cambiar de dependencias.
+
+`bun test` cubre los ayudantes de fecha (`src/utils/dateUtils.test.ts`). El comportamiento de los modales (Escape, clic fuera, bloqueo de scroll, login no descartable) se verificó a mano en navegador durante la revisión de diseño; no quedó automatizado porque el proyecto no tiene runner de navegador.

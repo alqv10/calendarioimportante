@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { X, Heart, Sparkles, Flower2 } from 'lucide-react'
 import { triggerAnniversaryExplosion, triggerJoyfulConfetti } from '../services/confetti'
+import { Modal } from './Modal'
 
 interface GraceEasterEggModalProps {
   isOpen: boolean
@@ -16,16 +17,14 @@ export const GraceEasterEggModal: React.FC<GraceEasterEggModalProps> = ({ isOpen
     }
   }, [isOpen])
 
-  if (!isOpen) return null
-
   const handleGiveRose = () => {
     setRoseCount(prev => prev + 1)
     triggerJoyfulConfetti()
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-fade-in">
-      <div className="relative w-full max-w-md bg-white dark:bg-[#1a1822] rounded-2xl border border-rose-300 dark:border-rose-900/60 shadow-2xl overflow-hidden p-6 text-center">
+    <Modal isOpen={isOpen} onClose={onClose} width="max-w-md" label="Sorpresa">
+      <div className="relative p-6 text-center">
         
         {/* Glow backdrop */}
         <div className="absolute -top-16 -right-16 w-40 h-40 bg-rose-500/20 rounded-full blur-3xl pointer-events-none" />
@@ -87,6 +86,6 @@ export const GraceEasterEggModal: React.FC<GraceEasterEggModalProps> = ({ isOpen
         </p>
 
       </div>
-    </div>
+    </Modal>
   )
 }

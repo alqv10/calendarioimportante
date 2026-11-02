@@ -2,6 +2,7 @@ import { X, Plus, Calendar, MapPin, Sparkles, Heart } from 'lucide-react'
 import { CATEGORIES } from '../types'
 import type { MemoryMoment } from '../types'
 import { formatDateSpanish, getTimeAgoSpanish } from '../utils/dateUtils'
+import { Modal } from './Modal'
 
 interface DayMomentsModalProps {
   isOpen: boolean
@@ -22,14 +23,11 @@ export const DayMomentsModal: React.FC<DayMomentsModalProps> = ({
   onSelectMoment,
   onAddNew
 }) => {
-  if (!isOpen || !dateStr) return null
-
-  const timeAgo = getTimeAgoSpanish(dateStr)
+  const timeAgo = dateStr ? getTimeAgoSpanish(dateStr) : ''
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 dark:bg-black/80 backdrop-blur-sm overflow-y-auto animate-fade-in">
-      <div className="relative w-full max-w-lg bg-white dark:bg-[#191720] rounded-2xl shadow-2xl border border-stone-200 dark:border-stone-800 overflow-hidden my-8">
-        
+    <Modal isOpen={isOpen && !!dateStr} onClose={onClose} width="max-w-lg" label="Recuerdos del dia">
+      
         {/* Header */}
         <div className="bg-gradient-to-r from-rose-500 via-rose-600 to-amber-500 p-6 text-white">
           <div className="flex items-center justify-between">
@@ -57,7 +55,7 @@ export const DayMomentsModal: React.FC<DayMomentsModalProps> = ({
         </div>
 
         {/* Content */}
-        <div className="p-6 space-y-4 max-h-[65vh] overflow-y-auto">
+        <div className="p-6 space-y-4">
           {moments.length === 0 ? (
             <div className="text-center py-8">
               <div className="w-12 h-12 mx-auto rounded-xl bg-rose-50 dark:bg-rose-950/60 flex items-center justify-center text-rose-400 mb-2">
@@ -114,7 +112,13 @@ export const DayMomentsModal: React.FC<DayMomentsModalProps> = ({
                       </div>
 
                       <h4 className="font-bold text-stone-900 dark:text-stone-100 text-base truncate group-hover:text-rose-500 transition-colors">
-                        {moment.title}
+                        <button
+                          type="button"
+                          onClick={event => { event.stopPropagation(); onSelectMoment(moment); onClose() }}
+                          className="max-w-full truncate text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 rounded-sm cursor-pointer"
+                        >
+                          {moment.title}
+                        </button>
                       </h4>
 
                       {moment.location && (
@@ -147,9 +151,7 @@ export const DayMomentsModal: React.FC<DayMomentsModalProps> = ({
             <Plus className="w-4 h-4 stroke-[2.5]" />
             <span>Añadir recuerdo en esta fecha</span>
           </button>
-        </div>
-
       </div>
-    </div>
+    </Modal>
   )
 }

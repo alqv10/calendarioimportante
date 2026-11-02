@@ -19,9 +19,8 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
   onAddMomentForDate,
   currentUserId
 }) => {
-  const today = new Date()
-  const [currentYear, setCurrentYear] = useState<number>(today.getFullYear())
-  const [currentMonth, setCurrentMonth] = useState<number>(today.getMonth())
+  const [currentYear, setCurrentYear] = useState<number>(() => new Date().getFullYear())
+  const [currentMonth, setCurrentMonth] = useState<number>(() => new Date().getMonth())
 
   const momentsByDate = useMemo(() => {
     const map = new Map<string, MemoryMoment[]>()
@@ -56,8 +55,9 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
   }
 
   const handleToday = () => {
-    setCurrentYear(today.getFullYear())
-    setCurrentMonth(today.getMonth())
+    const now = new Date()
+    setCurrentYear(now.getFullYear())
+    setCurrentMonth(now.getMonth())
   }
 
   const currentMonthPrefix = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}`
@@ -144,8 +144,15 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
             )
 
             return (
-              <div
+              <button
                 key={idx}
+                type="button"
+                aria-label={
+                  hasMoments
+                    ? `${formatDateSpanish(day.dateString)}: ${dayMoments.length} ${dayMoments.length === 1 ? 'recuerdo' : 'recuerdos'}`
+                    : `${formatDateSpanish(day.dateString)}: añadir recuerdo`
+                }
+                aria-current={day.isToday ? 'date' : undefined}
                 onClick={() => {
                   if (hasMoments) {
                     onSelectDate(day.dateString)
@@ -153,7 +160,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                     onAddMomentForDate(day.dateString)
                   }
                 }}
-                className={`group relative min-h-[90px] sm:min-h-[110px] md:min-h-[125px] rounded-xl p-1.5 sm:p-2 border transition-all duration-300 cursor-pointer flex flex-col justify-between select-none overflow-hidden ${
+                className={`group relative aspect-square sm:aspect-auto sm:min-h-[110px] md:min-h-[125px] rounded-xl p-1.5 sm:p-2 border transition-all duration-300 cursor-pointer flex flex-col justify-between select-none overflow-hidden text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 ${
                   !day.isCurrentMonth
                     ? 'bg-stone-50/40 dark:bg-stone-900/20 border-dashed border-stone-200/50 dark:border-stone-800/40 text-stone-300 dark:text-stone-700 opacity-40'
                     : day.isToday
@@ -168,18 +175,14 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                 {/* 🌟 Glassmorphism Background with Photo Backdrop */}
                 {firstPhoto && (
                   <>
-                    {/* Background Photo with zoom on hover */}
                     <img
                       src={firstPhoto.url}
                       alt={primaryMoment.title}
-                      className="absolute inset-0 w-full h-full object-cover transform scale-105 group-hover:scale-115 transition-transform duration-500 ease-out"
+                      loading="lazy"
+                      className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
                     />
-
-                    {/* Frosted Glass Overlay */}
-                    <div className="absolute inset-0 bg-white/55 dark:bg-black/65 backdrop-blur-[6px] group-hover:backdrop-blur-[2px] group-hover:bg-white/25 dark:group-hover:bg-black/40 transition-all duration-300" />
-
-                    {/* Glass Specular Sheen Gradient */}
-                    <div className="absolute inset-0 bg-gradient-to-tr from-white/10 via-transparent to-white/30 dark:from-white/5 dark:to-white/10 pointer-events-none" />
+                    {/* Degradado solo donde apoya el texto: la foto queda legible */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/15 to-black/25 pointer-events-none" />
                   </>
                 )}
 
@@ -232,13 +235,13 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                   {hasMoments ? (
                     <div className="space-y-1">
                       {firstPhoto ? (
-                        <div className="p-1 rounded-lg bg-black/55 text-white backdrop-blur-md border border-white/20 shadow-xs group-hover:bg-black/70 transition-colors">
-                          <div className="flex items-center gap-1 text-[10px] font-bold truncate">
+                        <div className="px-0.5 text-white">
+                          <div className="flex items-center gap-1 text-[10px] font-bold truncate drop-shadow-md">
                             <span>{primaryMoment.emoji}</span>
-                            <span className="truncate drop-shadow-xs">{primaryMoment.title}</span>
+                            <span className="truncate hidden sm:inline">{primaryMoment.title}</span>
                           </div>
                           {totalDayPhotos > 1 && (
-                            <span className="text-[9px] text-rose-200 font-semibold block mt-0.5">
+                            <span className="hidden sm:block text-[9px] font-semibold text-white/85 drop-shadow-md mt-0.5">
                               📸 {totalDayPhotos} fotos
                             </span>
                           )}
@@ -261,7 +264,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                   )}
                 </div>
 
-              </div>
+              </button>
             )
           })}
         </div>
@@ -270,7 +273,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
       {/* Highlights of Current Month */}
       {monthMemories.length > 0 && (
         <div className="bg-white/90 dark:bg-[#181620]/90 rounded-2xl p-5 sm:p-6 border border-stone-200 dark:border-stone-800 shadow-sm transition-colors">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 mb-4">
             <h3 className="text-lg font-bold text-stone-900 dark:text-white flex items-center gap-2">
               <Sparkles className="w-5 h-5 text-amber-500" />
               Recuerdos de este mes ({MONTH_NAMES_ES[currentMonth]})
@@ -289,28 +292,17 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                 <div
                   key={moment.id}
                   onClick={() => onSelectMoment(moment)}
-                  className="group relative overflow-hidden rounded-xl p-4 border border-stone-200 dark:border-stone-800 hover:border-rose-400 dark:hover:border-rose-600 hover:shadow-lg transition-all duration-300 cursor-pointer flex flex-col justify-between"
+                  className="group relative overflow-hidden rounded-xl p-4 bg-white dark:bg-[#191722] border border-stone-200 dark:border-stone-800 hover:border-rose-400 dark:hover:border-rose-600 hover:shadow-lg transition-all duration-300 cursor-pointer flex flex-col justify-between"
                 >
-                  {/* Subtle Glass Backdrop with Photo */}
-                  {photo && (
-                    <>
-                      <img
-                        src={photo.url}
-                        alt={moment.title}
-                        className="absolute inset-0 w-full h-full object-cover scale-105 group-hover:scale-110 transition-transform duration-500"
-                      />
-                      <div className="absolute inset-0 bg-white/75 dark:bg-black/80 backdrop-blur-[8px] group-hover:backdrop-blur-[4px] group-hover:bg-white/55 dark:group-hover:bg-black/65 transition-all duration-300" />
-                    </>
-                  )}
-
                   <div className="relative z-10">
                     <div className="flex items-start gap-3">
                       {photo ? (
-                        <div className="w-16 h-16 rounded-xl overflow-hidden flex-shrink-0 border border-white/50 shadow-xs">
+                        <div className="w-16 h-16 rounded-xl overflow-hidden flex-shrink-0 border border-stone-200 dark:border-stone-700 shadow-xs">
                           <img
                             src={photo.url}
                             alt={moment.title}
-                            className="w-full h-full object-cover"
+                            loading="lazy"
+                            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                           />
                         </div>
                       ) : (
@@ -331,7 +323,13 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                           )}
                         </div>
                         <h4 className="font-bold text-stone-900 dark:text-stone-100 text-sm truncate group-hover:text-rose-500 transition-colors">
-                          {moment.title}
+                          <button
+                            type="button"
+                            onClick={event => { event.stopPropagation(); onSelectMoment(moment) }}
+                            className="max-w-full truncate text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 rounded-sm cursor-pointer"
+                          >
+                            {moment.title}
+                          </button>
                         </h4>
                         <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5">
                           {formatDateSpanish(moment.date)}

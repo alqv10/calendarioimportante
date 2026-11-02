@@ -7,7 +7,8 @@ Calendario para guardar recuerdos con fechas, fotos, lugares, notas y música. A
 - Calendario, línea de tiempo, búsqueda y vista de hitos.
 - Recuerdos con fotos, ubicación, texto y música.
 - Tema claro/oscuro y navegación móvil.
-- Almacenamiento local heredado, ya no disponible como modo de acceso.
+- Calendario y tarjetas manejables por teclado, y modales con cierre por Escape.
+- Los recuerdos se guardan únicamente en Supabase; no hay modo local.
 - Cuentas en la nube con correo y contraseña mediante Supabase Auth.
 - Los datos sincronizados en Supabase están limitados por cuenta mediante Row Level Security (RLS).
 - PWA para añadir a la pantalla de inicio en dispositivos compatibles. No es una aplicación nativa de App Store.
@@ -27,6 +28,7 @@ Abre la URL local que muestra Vite. Para compilar y revisar el código:
 ```bash
 bun run build
 bun run lint
+bun test
 ```
 
 ## Supabase
